@@ -1,0 +1,48 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /ticket
+spring:
+  application.name: ticket-service
+  datasource:
+    url: ${DBMS_CONNECTION}
+    username: ${DBMS_USERNAME}
+    password: ${DBMS_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=60s
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      timeout: 6000ms
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 10s
+      thread-name-prefix: "MyExecutor-"
+cloudinary:
+  cloud_name: dis2ybh5i
+  api_key: ${CLOUDINARY_KEY}
+  api_secret: ${CLOUDINARY_SECREST}
+client:
+  vault-service: ${VAULT_HOST}
+key:
+  EAS: ${EAS_KEY}
+

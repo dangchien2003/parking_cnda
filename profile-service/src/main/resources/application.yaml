@@ -1,0 +1,19 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /profile
+spring:
+  application:
+    name: profile-service
+  datasource:
+    url: ${DBMS_CONNECTION}
+    username: ${DBMS_USERNAME}
+    password: ${DBMS_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+cloudinary:
+  cloud_name: dis2ybh5i
+  api_key: ${CLOUDINARY_KEY}
+  api_secret: ${CLOUDINARY_SECREST}

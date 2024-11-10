@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+app:
+  api-prefix: /gateway/v1
+
+spring:
+  application.name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: identity_service
+          uri: ${URI_IDENTIRY}
+          predicates:
+            - Path=${app.api-prefix}/identity/**
+          filters:
+            - StripPrefix=2
+
+        - id: notification-service
+          uri: ${URI_NOTIFICATION}
+          predicates:
+            - Path=${app.api-prefix}/notification/**
+          filters:
+            - StripPrefix=2
+
+        - id: profile-service
+          uri: ${URI_PROFILE}
+          predicates:
+            - Path=${app.api-prefix}/profile/**
+          filters:
+            - StripPrefix=2
