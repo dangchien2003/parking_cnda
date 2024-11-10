@@ -82,6 +82,7 @@ public class FluctuationController {
                 .result(fluctuationService.getAllByCustomer(type, page, sort, field))
                 .build();
     }
+    
     @GetMapping("/use-in-month")
     ApiResponse<Integer> getDebitInMonth() {
         return ApiResponse.<Integer>builder()
