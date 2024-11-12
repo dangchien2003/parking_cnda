@@ -21,8 +21,10 @@ public class CustomerProfileController {
     CustomerProfileService customerProfileService;
     UploaderService uploaderService;
 
-    @GetMapping("/{uid}")
-    ApiResponse<CustomerProfileResponse> getProfile(@PathVariable String uid) {
+    @GetMapping("/info")
+    ApiResponse<CustomerProfileResponse> getProfile(
+            @RequestParam(name = "uid", required = false) String uid
+    ) {
         return ApiResponse.<CustomerProfileResponse>builder()
                 .result(customerProfileService.getProfile(uid))
                 .build();

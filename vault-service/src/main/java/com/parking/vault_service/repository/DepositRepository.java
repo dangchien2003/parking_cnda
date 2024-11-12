@@ -3,9 +3,8 @@ package com.parking.vault_service.repository;
 import com.parking.vault_service.entity.Deposit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface DepositRepository extends MongoRepository<Deposit, String> {
+public interface DepositRepository extends JpaRepository<Deposit, String> {
     Page<Deposit> findAllByActionAtIsNullAndCancelAtIsNull(Pageable pageable);
 
     Page<Deposit> findAllByActionAtIsNotNull(Pageable pageable);
@@ -34,16 +33,10 @@ public interface DepositRepository extends MongoRepository<Deposit, String> {
 
     List<Deposit> findByIdInAndActionAtIsNullAndCancelAtIsNull(List<String> depositsId);
 
-    @Aggregation(pipeline = {
-            "{ '$match': {'ownerId': ?0 } }",
-            "{ '$group': { '_id': null, 'totalAmount': { '$sum': '$amount' } } }"
-    })
+    @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE ownerId = :ownerId")
     Integer calculateTotalAmountWhereOwnerId(@Param("ownerId") String ownerId);
 
-    @Aggregation(pipeline = {
-            "{ '$match': { 'actionAt': null, 'ownerId': ?0 } }",
-            "{ '$group': { '_id': null, 'totalAmount': { '$sum': '$amount' } } }"
-    })
+  @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE actionAt IS NULL AND ownerId = :ownerId")
     Integer calculateTotalWaitApproveWhereOwnerId(@Param("ownerId") String ownerId);
 
     List<Deposit> findAllByOwnerId(String owner, Pageable pageable);

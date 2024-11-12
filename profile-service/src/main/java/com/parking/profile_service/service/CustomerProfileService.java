@@ -69,8 +69,11 @@ public class CustomerProfileService {
     }
 
 
-    @PreAuthorize("hasAuthority('ROLE_STAFF') or #uid == authentication.name")
     public CustomerProfileResponse getProfile(String uid) {
+
+        if(uid == null) {
+            uid = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
 
         ProfileCustomer profileCustomer = customerProfileRepository.findById(uid)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_EXIST));

@@ -3,11 +3,11 @@ package com.parking.vault_service.repository;
 import com.parking.vault_service.entity.Fluctuation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface FluctuationRepository extends MongoRepository<Fluctuation, String> {
+public interface FluctuationRepository extends JpaRepository<Fluctuation, String> {
     Page<Fluctuation> findAllByReason(String reason, Pageable pageable);
 
     Page<Fluctuation> findAllByReasonAndOwnerId(String reason, String owner, Pageable pageable);

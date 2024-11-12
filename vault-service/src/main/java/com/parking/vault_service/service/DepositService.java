@@ -192,16 +192,16 @@ public class DepositService {
 
 
     public Integer totalDeposit() {
-//        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
 
         int total = depositRepository.calculateTotalAmountWhereOwnerId(uid);
         return total;
     }
 
     public Integer totalApproved() {
-//        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
 
         int total = totalDeposit();
         int wait = totalWaitApprove();
@@ -211,15 +211,15 @@ public class DepositService {
     }
 
     public Integer totalWaitApprove() {
-//        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
         int total = depositRepository.calculateTotalWaitApproveWhereOwnerId(uid);
         return total;
     }
 
     public List<HistoryDeposit> history(int page, String status, String date) {
-        // String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
+         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
         Pageable pageable = PageUtil.getPageable(page, 10, PageUtil.getSort("DESC","createAt"));
         List<Deposit> deposits;
         if(status == null && date == null) {
