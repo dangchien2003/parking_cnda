@@ -142,8 +142,8 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
 
-//        if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
-//            throw new AppException(ErrorCode.USER_NOT_EXIST);
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
+            throw new AppException(ErrorCode.USER_NOT_EXIST);
 
         if (user.getIsBlocked() == EBlock.BLOCKED.getValue())
             throw new AppException(ErrorCode.ACCOUNT_BLOCKED);
