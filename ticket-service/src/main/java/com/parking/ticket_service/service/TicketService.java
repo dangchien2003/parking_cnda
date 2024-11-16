@@ -22,20 +22,18 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -493,20 +491,20 @@ public class TicketService {
 
         return pageData.getContent().stream().map(ticket -> {
             TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
-            if(ticket.getExpireAt() < Instant.now().toEpochMilli()) {
+            if (ticket.getExpireAt() < Instant.now().toEpochMilli()) {
                 ticketResponse.setStatus("Đã hết hạn");
-            }else if(ticket.getTurnTotal() == 0) {
+            } else if (ticket.getTurnTotal() == 0) {
                 ticketResponse.setStatus("Chờ sử dụng");
-            } else if(ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES)
+            } else if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES)
                     && ticket.getCategory().getQuantity() <= ticket.getTurnTotal()) {
                 Plate plate = plateRepository.
                         findById(new PlateId(ticket.getId(), ticket.getTurnTotal())).orElse(null);
 
-                if(plate.getCheckoutAt() > 0)
+                if (plate.getCheckoutAt() > 0)
                     ticketResponse.setStatus("Chờ sử dụng");
                 else
                     ticketResponse.setStatus("Đang sử dụng");
-            }else {
+            } else {
                 ticketResponse.setStatus("Đã hết hạn");
             }
 
@@ -514,10 +512,39 @@ public class TicketService {
         }).toList();
     }
 
-    public Integer countTicketPurchased(){
+    public Integer countTicketPurchased() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
+
         return ticketRepository.countByUid(uid);
+    }
+
+    public Integer countUseTimesInMonth() {
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        long end = Instant.now().toEpochMilli();
+
+        LocalDate currentDate = LocalDate.now();
+        LocalDate firstDayOfMonth = currentDate.withDayOfMonth(1);
+        ZonedDateTime startOfMonth = firstDayOfMonth.atStartOfDay(ZoneId.systemDefault());
+        long start = startOfMonth.toInstant().toEpochMilli();
+
+        List<Ticket> ticketsUseInMonth = ticketRepository.findAllByUidAndUsedAtBetween(uid, start, end);
+
+        List<String> ticketIds = new ArrayList<>();
+        ticketsUseInMonth.forEach(ticket -> {
+            ticketIds.add(ticket.getId());
+        });
+
+        return plateRepository.countByTicketIds(ticketIds, start, end);
+    }
+
+    public List<RecentActivityResponse> getRecentActivity() {
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        List<Ticket> tickets = ticketRepository.findByUid(uid, PageUtils.getPageable(1, 5, PageUtils.getSort("DESC", "usedAt"))).getContent();
+
+        return tickets.stream().map(ticket -> new RecentActivityResponse(ticket.getCategory().getName(), ticket.getTurnTotal(), TimeUtils.convertTime(ticket.getUsedAt(), "dd/MM/yyyy hh:mm:ss"))).toList();
     }
 
 }

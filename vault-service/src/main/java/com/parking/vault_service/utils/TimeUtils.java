@@ -21,9 +21,10 @@ public class TimeUtils {
     public static long timeToLong(String time, String format) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(format);
         try {
-            LocalDateTime dateTime = LocalDateTime.parse(time, dtf);
-            return dateTime.atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+            LocalDate date = LocalDate.parse(time, dtf);
+            return date.atStartOfDay(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
         } catch (DateTimeParseException e) {
+            e.printStackTrace();
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }

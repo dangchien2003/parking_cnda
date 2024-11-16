@@ -1,6 +1,7 @@
 package com.parking.vault_service.service;
 
 import com.parking.vault_service.dto.request.AddFluctuationRequest;
+import com.parking.vault_service.dto.response.Fluctuation30DaysResponse;
 import com.parking.vault_service.dto.response.FluctuationResponse;
 import com.parking.vault_service.dto.response.PageResponse;
 import com.parking.vault_service.entity.Fluctuation;
@@ -27,7 +28,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -99,12 +103,34 @@ public class FluctuationService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public List<FluctuationResponse> getAllByCustomer(String type, int page, String sort, String field) {
+    public List<FluctuationResponse> getAllByCustomer(String type, String date, int page, String sort, String field) {
+
+        long start = 0;
+        long end = 0;
+        if (date != null) {
+            start = TimeUtils.timeToLong(date, "dd/MM/yyyy");
+            end = start + 24 * 60 * 60 * 1000 - 1;
+        }
+
         String uid = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
 
-        List<Fluctuation> fluctuations = getAll(type, uid, page, sort, field).getData();
+        List<Fluctuation> fluctuations = null;
+
+        if (start != 0 && type != null) {
+            fluctuations = fluctuationRepository.findAllByOwnerIdAndReasonAndCreateAtBetweenOrderByCreateAtDesc(
+                    uid, type, start, end, PageUtil.getPageable(page, 20, sort, field));
+        } else if (start != 0) {
+            fluctuations = fluctuationRepository.findAllByOwnerIdAndCreateAtBetweenOrderByCreateAtDesc(
+                    uid, start, end, PageUtil.getPageable(page, 20, sort, field));
+        } else if (type != null) {
+            fluctuations = fluctuationRepository.findAllByOwnerIdAndReasonOrderByCreateAtDesc(
+                    uid, type, PageUtil.getPageable(page, 20, sort, field));
+        } else {
+            fluctuations = fluctuationRepository.findAllByOwnerIdOrderByCreateAtDesc(
+                    uid, PageUtil.getPageable(page, 20, sort, field));
+        }
+
         return fluctuations.stream().map(fluctuation -> {
             FluctuationResponse fluctuationResponse = new FluctuationResponse();
             fluctuationResponse.setTime(TimeUtils.convertTime(fluctuation.getCreateAt(), "dd/MM/yyyy HH:mm:ss"));
@@ -114,7 +140,7 @@ public class FluctuationService {
         }).toList();
     }
 
-    PageResponse<Fluctuation> getAll(@NotNull String type, String uid, int page, String sort, String field) {
+    PageResponse<Fluctuation> getAll(String type, String uid, int page, String sort, String field) {
         EReason reason = null;
         Pageable pageable = PageUtil.getPageable(page, EPageQuantity.FLUCTUATION.getQuantity(), sort, field);
 
@@ -168,11 +194,61 @@ public class FluctuationService {
                 .findByTransactionAndOwnerIdAndCreateAtIsBetween(ETransaction.DEBIT.name(), uid, start, now);
 
         int total = 0;
-        for(Fluctuation fluctuation : fluctuations) {
+        for (Fluctuation fluctuation : fluctuations) {
             total += fluctuation.getAmount();
         }
 
         return total;
+    }
+
+    public List<Fluctuation30DaysResponse> fluctuationIn30Days() {
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+        LocalDate now = LocalDate.now();
+        long end = Instant.now().toEpochMilli();
+        String currentDay = TimeUtils.convertTime(end, "dd/MM/yyyy");
+        long start = now.minusDays(30).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        List<Fluctuation> fluctuations = fluctuationRepository.findAllByOwnerIdAndCreateAtBetweenOrderByCreateAtDesc(uid, start, end);
+
+        Owner owner = ownerRepository.findById(uid).orElseThrow(() -> new AppException(ErrorCode.OWNER_NOT_EXIST));
+
+        int balance = owner.getBalance();
+
+        List<Fluctuation30DaysResponse> data = new LinkedList<>();
+        data.addFirst(new Fluctuation30DaysResponse(currentDay, owner.getBalance()));
+        String day = null;
+        for (Fluctuation fluctuation : fluctuations) {
+            String createDay = TimeUtils.convertTime(fluctuation.getCreateAt(), "dd/MM/yyyy");
+
+            if (day == null) {
+                day = createDay;
+            }
+
+            if (!day.equals(createDay)) {
+                day = createDay;
+                Fluctuation30DaysResponse fluctuation30DaysResponse = Fluctuation30DaysResponse.builder()
+                        .day(day)
+                        .amount(balance)
+                        .build();
+
+                data.addFirst(fluctuation30DaysResponse);
+
+
+            }
+
+            balance = getRemaining(balance, fluctuation);
+        }
+
+        return data;
+    }
+
+    int getRemaining(int balance, Fluctuation fluctuation) {
+        if (fluctuation.getTransaction().equals(ETransaction.CREDIT.name())) {
+            balance -= fluctuation.getAmount();
+        } else {
+            balance += fluctuation.getAmount();
+        }
+        return balance;
     }
 
 

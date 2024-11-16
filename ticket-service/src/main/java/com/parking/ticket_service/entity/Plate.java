@@ -35,4 +35,6 @@ public class Plate {
 
     @ManyToOne
     Station station;
+
+    long usedAt;
 }

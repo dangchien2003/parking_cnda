@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.parking.ticket_service.dto.request.*;
 import com.parking.ticket_service.dto.response.ApiResponse;
 import com.parking.ticket_service.dto.response.InfoTicketResponse;
+import com.parking.ticket_service.dto.response.RecentActivityResponse;
 import com.parking.ticket_service.dto.response.TicketResponse;
 import com.parking.ticket_service.service.TicketService;
 import jakarta.validation.Valid;
@@ -112,9 +113,24 @@ public class TicketController {
     }
 
     @GetMapping("count/purchased")
-    ApiResponse<Integer> countTicketPurchased(){
+    ApiResponse<Integer> countTicketPurchased() {
         return ApiResponse.<Integer>builder()
                 .result(ticketService.countTicketPurchased())
+                .build();
+    }
+
+
+    @GetMapping("count/use-times-in-month")
+    ApiResponse<Integer> countUseTimesInMonth() {
+        return ApiResponse.<Integer>builder()
+                .result(ticketService.countUseTimesInMonth())
+                .build();
+    }
+
+    @GetMapping("recent_activity")
+    ApiResponse<List<RecentActivityResponse>> getRecentActivity() {
+        return ApiResponse.<List<RecentActivityResponse>>builder()
+                .result(ticketService.getRecentActivity())
                 .build();
     }
 

@@ -34,4 +34,6 @@ public class Ticket {
     long expireAt;
 
     long cancleAt;
+
+    long usedAt;
 }

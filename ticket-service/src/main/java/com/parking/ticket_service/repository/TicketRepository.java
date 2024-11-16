@@ -12,7 +12,10 @@ import java.util.Optional;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, String> {
     Optional<Ticket> findByIdAndUid(String id, String uid);
+
     Page<Ticket> findByUid(String uid, Pageable pageable);
+
+    List<Ticket> findAllByUidAndUsedAtBetween(String uid, long start, long end);
 
     int countByUid(String uid);
 }

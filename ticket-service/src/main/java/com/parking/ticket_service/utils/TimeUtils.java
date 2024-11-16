@@ -3,10 +3,12 @@ package com.parking.ticket_service.utils;
 import com.parking.ticket_service.exception.AppException;
 import com.parking.ticket_service.exception.ErrorCode;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 
 public class TimeUtils {
     public static boolean isValidDateTime(String dateTimeStr, String format) {
@@ -27,5 +29,11 @@ public class TimeUtils {
         } catch (DateTimeParseException e) {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
+    }
+
+    public static String convertTime(long timeInMillis, String format) {
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
+        Date date = new Date(timeInMillis);
+        return sdf.format(date);
     }
 }

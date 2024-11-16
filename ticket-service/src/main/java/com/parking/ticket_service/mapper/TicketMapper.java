@@ -15,8 +15,9 @@ public interface TicketMapper {
     TicketResponse toTicketResponse(Ticket ticket);
 
     InfoTicketResponse toInfoTicketResponse(Ticket ticket);
-    
+
     @Mapping(source = "id", target = "ticket")
     @Mapping(source = "expireAt", target = "expireAt")
     ContentQr toContentQr(Ticket ticket);
+
 }

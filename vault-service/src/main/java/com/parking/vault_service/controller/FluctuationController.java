@@ -1,6 +1,7 @@
 package com.parking.vault_service.controller;
 
 import com.parking.vault_service.dto.response.ApiResponse;
+import com.parking.vault_service.dto.response.Fluctuation30DaysResponse;
 import com.parking.vault_service.dto.response.FluctuationResponse;
 import com.parking.vault_service.dto.response.PageResponse;
 import com.parking.vault_service.entity.Fluctuation;
@@ -63,9 +64,9 @@ public class FluctuationController {
                 .build();
     }
 
-    @GetMapping("/{type}")
+    @GetMapping("/")
     ApiResponse<List<FluctuationResponse>> customerGetAll(
-            @PathVariable(name = "type")
+            @RequestParam(name = "type", required = false)
             String type,
 
             @RequestParam(name = "page", defaultValue = "1")
@@ -76,17 +77,26 @@ public class FluctuationController {
             String sort,
 
             @RequestParam(name = "field", required = false, defaultValue = "createAt")
-            String field
+            String field,
+
+            @RequestParam(name = "date", required = false) String date
     ) {
         return ApiResponse.<List<FluctuationResponse>>builder()
-                .result(fluctuationService.getAllByCustomer(type, page, sort, field))
+                .result(fluctuationService.getAllByCustomer(type, date, page, sort, field))
                 .build();
     }
-    
+
     @GetMapping("/use-in-month")
     ApiResponse<Integer> getDebitInMonth() {
         return ApiResponse.<Integer>builder()
                 .result(fluctuationService.getUseInMonth())
+                .build();
+    }
+
+    @GetMapping("/fluctuation-in-30-day")
+    ApiResponse<List<Fluctuation30DaysResponse>> getTimesUseIn30Days() {
+        return ApiResponse.<List<Fluctuation30DaysResponse>>builder()
+                .result(fluctuationService.fluctuationIn30Days())
                 .build();
     }
 
