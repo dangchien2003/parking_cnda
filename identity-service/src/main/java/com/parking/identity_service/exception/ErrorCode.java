@@ -12,28 +12,27 @@ import org.springframework.http.HttpStatusCode;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public enum ErrorCode {
-    INVALID_PASSWORD(2001, "password is less than {min} characters", HttpStatus.BAD_REQUEST),
-    USER_EXISTED(2002, "User existed", HttpStatus.BAD_REQUEST),
-    USER_NOT_EXIST(2003, "User not exist", HttpStatus.BAD_REQUEST),
-    WRONG_PASSWORD(2004, "Incorrect password", HttpStatus.BAD_REQUEST),
-    AUTHENTICATION_FAIL(2005, "Incorrect username or password", HttpStatus.UNAUTHORIZED),
-    ACCOUNT_BLOCKED(2006, "Account blocked", HttpStatus.FORBIDDEN),
-    INVALID_EMAIL(2007, "Email format incorrect", HttpStatus.BAD_REQUEST),
-    INVALID_KEY(2008, "Invalid message key", HttpStatus.BAD_REQUEST),
-    BLANK_TOKEN(2009, "Token cannot be empty ", HttpStatus.BAD_REQUEST),
-    UNAUTHENTICATED(2010, "Unauthenticated", HttpStatus.UNAUTHORIZED),
-    NOTFOUND_METHOD(2011, "Url not support method", HttpStatus.BAD_REQUEST),
-    BODY_PARSE_FAIL(2012, "Body parse fail", HttpStatus.BAD_REQUEST),
-    INVALID_TOKEN(2013, "Invalid token", HttpStatus.BAD_REQUEST),
-    FIELD_INFORMATION_MISSING(2014, "Field information is missing: {field}", HttpStatus.BAD_REQUEST),
-    CANNOT_DELETE(2015, "Cannot delete object", HttpStatus.BAD_REQUEST),
-    NOTFOUND_URL(2016, "Url not exists", HttpStatus.BAD_REQUEST),
-    UNAUTHORIZED(2017, "Not have permission", HttpStatus.FORBIDDEN),
-    INVALID_BIRTHDAY(2018, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
-    INVALID_LIST_UID(2019, "The uid list must have at least {min} element", HttpStatus.BAD_REQUEST),
+    INVALID_PASSWORD(2001, "mật khẩu ít hơn {min} ký tự", HttpStatus.BAD_REQUEST),
+    USER_EXISTED(2002, "Người dùng đã tồn tại", HttpStatus.BAD_REQUEST),
+    USER_NOT_EXIST(2003, "Người dùng không tồn tại", HttpStatus.BAD_REQUEST),
+    WRONG_PASSWORD(2004, "Mật khẩu không đúng", HttpStatus.BAD_REQUEST),
+    AUTHENTICATION_FAIL(2005, "Tên người dùng hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
+    ACCOUNT_BLOCKED(2006, "Tài khoản đã bị chặn", HttpStatus.FORBIDDEN),
+    INVALID_EMAIL(2007, "Định dạng email không đúng", HttpStatus.BAD_REQUEST),
+    INVALID_KEY(2008, "Tin nhắn không hợp lệ key", HttpStatus.BAD_REQUEST),
+    BLANK_TOKEN(2009, "Không thể để trống mã thông báo", HttpStatus.BAD_REQUEST),
+    UNAUTHENTICATED(2010, "Chưa xác thực", HttpStatus.UNAUTHORIZED),
+    NOTFOUND_METHOD(2011, "Url không hỗ trợ phương thức", HttpStatus.BAD_REQUEST),
+    BODY_PARSE_FAIL(2012, "Phân tích cú pháp nội dung không thành công", HttpStatus.BAD_REQUEST),
+    INVALID_TOKEN(2013, "Mã thông báo không hợp lệ", HttpStatus.BAD_REQUEST),
+    FIELD_INFORMATION_MISSING(2014, "Thiếu thông tin trường: {field}", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE(2015, "Không thể xóa đối tượng", HttpStatus.BAD_REQUEST),
+    NOTFOUND_URL(2016, "Url không tồn tại", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED(2017, "Không có quyền", HttpStatus.FORBIDDEN),
+    INVALID_BIRTHDAY(2018, "Tuổi của bạn phải ít nhất là {min}", HttpStatus.BAD_REQUEST),
+    INVALID_LIST_UID(2019, "Danh sách uid phải có ít nhất {min} phần tử", HttpStatus.BAD_REQUEST),
 
-
-    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNCATEGORIZED_EXCEPTION(9999, "Lỗi chưa phân loại", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
     int code;
     String message;
