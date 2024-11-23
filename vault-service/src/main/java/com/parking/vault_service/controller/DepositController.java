@@ -8,6 +8,7 @@ import com.parking.vault_service.entity.Deposit;
 import com.parking.vault_service.entity.Fluctuation;
 import com.parking.vault_service.service.ApproveDeposit;
 import com.parking.vault_service.service.DepositService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
@@ -27,9 +28,10 @@ public class DepositController {
     ApproveDeposit approveDeposit;
 
     @PostMapping
-    ApiResponse<DepositResponse> create(@Valid @RequestBody DepositCreationRequest request) {
+    ApiResponse<DepositResponse> create(HttpServletRequest http,
+                                        @Valid @RequestBody DepositCreationRequest request) {
         return ApiResponse.<DepositResponse>builder()
-                .result(depositService.create(request))
+                .result(depositService.create(http, request))
                 .build();
     }
 

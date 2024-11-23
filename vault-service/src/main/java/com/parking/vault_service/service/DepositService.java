@@ -12,7 +12,6 @@ import com.parking.vault_service.entity.Fluctuation;
 import com.parking.vault_service.entity.Owner;
 import com.parking.vault_service.enums.EGetAllDeposit;
 import com.parking.vault_service.enums.EPageQuantity;
-import com.parking.vault_service.enums.ETransaction;
 import com.parking.vault_service.exception.AppException;
 import com.parking.vault_service.exception.ErrorCode;
 import com.parking.vault_service.mapper.DepositMapper;
@@ -20,30 +19,29 @@ import com.parking.vault_service.repository.DepositRepository;
 import com.parking.vault_service.repository.OwnerRepository;
 import com.parking.vault_service.utils.ENumUtil;
 import com.parking.vault_service.utils.PageUtil;
+import com.parking.vault_service.utils.PaymentUtils;
 import com.parking.vault_service.utils.TimeUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.Jar;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class DepositService {
-
+    VnPayService vnPayService;
     DepositRepository depositRepository;
     OwnerRepository ownerRepository;
     DepositMapper depositMapper;
@@ -66,7 +64,7 @@ public class DepositService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public DepositResponse create(DepositCreationRequest request) {
+    public DepositResponse create(HttpServletRequest http, DepositCreationRequest request) {
 
         String uid = SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -80,16 +78,30 @@ public class DepositService {
         if (numDepositWaiting >= 3)
             throw new AppException(ErrorCode.MANY_DEPOSIT);
 
-        Deposit deposit = depositRepository.findById(request.getCode()).orElse(null);
-        if (!Objects.isNull(deposit))
-            throw new AppException(ErrorCode.DEPOSIT_FAIL);
+        String id = UUID.randomUUID().toString();
+        while (true) {
+            if (depositRepository.existsById(id))
+                id = UUID.randomUUID().toString();
+            else
+                break;
+        }
 
-        deposit = depositMapper.toDeposit(request);
+        Deposit deposit = depositMapper.toDeposit(request);
         deposit.setOwnerId(owner.getId());
+        deposit.setId(id);
         deposit.setCreateAt(Instant.now().toEpochMilli());
 
         deposit = depositRepository.save(deposit);
-        return depositMapper.toDepositResponse(deposit);
+
+        DepositResponse response = depositMapper.toDepositResponse(deposit);
+
+        String ip = PaymentUtils.getClientIP(http);
+        try {
+            response.setLinkPayment(vnPayService.generateUrl(id, deposit.getAmount(), ip));
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(ErrorCode.UPDATE_FAIL);
+        }
+        return response;
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
@@ -218,30 +230,29 @@ public class DepositService {
     }
 
     public List<HistoryDeposit> history(int page, String status, String date) {
-         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 //        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
-        Pageable pageable = PageUtil.getPageable(page, 10, PageUtil.getSort("DESC","createAt"));
+        Pageable pageable = PageUtil.getPageable(page, 10, PageUtil.getSort("DESC", "createAt"));
         List<Deposit> deposits;
-        if(status == null && date == null) {
-            deposits  = depositRepository.findAllByOwnerId(uid, pageable);
+        if (status == null && date == null) {
+            deposits = depositRepository.findAllByOwnerId(uid, pageable);
         } else if (status != null && date == null) {
-            if(status.equals("approved"))
-                deposits  = depositRepository.findAllByOwnerIdAndActionAtIsNotNull(uid, pageable).getContent();
+            if (status.equals("approved"))
+                deposits = depositRepository.findAllByOwnerIdAndActionAtIsNotNull(uid, pageable).getContent();
             else
-                deposits  = depositRepository.findAllByOwnerIdAndActionAtIsNull(uid, pageable).getContent();
+                deposits = depositRepository.findAllByOwnerIdAndActionAtIsNull(uid, pageable).getContent();
         } else if (status == null && date != null) {
             long start = TimeUtils.getStartOfDay(date);
             long end = TimeUtils.getEndOfDay(date);
-            deposits  = depositRepository.findAllByCreateAtIsBetweenAndOwnerId(start, end, uid, pageable);
-        }else  {
+            deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerId(start, end, uid, pageable);
+        } else {
             long start = TimeUtils.getStartOfDay(date);
             long end = TimeUtils.getEndOfDay(date);
-            if(status.equals("approved"))
+            if (status.equals("approved"))
                 deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNotNull(start, end, uid, pageable);
             else
                 deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNull(start, end, uid, pageable);
         }
-
 
 
         return deposits.stream().map(deposit -> {

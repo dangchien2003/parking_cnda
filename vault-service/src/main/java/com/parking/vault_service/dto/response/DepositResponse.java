@@ -16,4 +16,6 @@ public class DepositResponse {
     int amount;
 
     long createAt;
+
+    String linkPayment;
 }
