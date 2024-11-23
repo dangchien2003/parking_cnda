@@ -14,4 +14,6 @@ public class AuthenticationResponse {
 
     @Builder.Default
     boolean authenticated = true;
+
+    boolean manager;
 }

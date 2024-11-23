@@ -8,6 +8,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.parking.identity_service.dto.request.*;
 import com.parking.identity_service.dto.response.*;
 import com.parking.identity_service.entity.InvalidatedToken;
+import com.parking.identity_service.entity.Role;
 import com.parking.identity_service.entity.User;
 import com.parking.identity_service.enums.EBlock;
 import com.parking.identity_service.exception.AppException;
@@ -30,6 +31,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -151,7 +153,18 @@ public class AuthenticationService {
         String token = genToken(user);
         return AuthenticationResponse.builder()
                 .token(token)
+                .manager(isAdmin(user.getRoles()))
                 .build();
+    }
+
+    boolean isAdmin(Set<Role> roles) {
+
+        for (Role role : roles) {
+            if (role.getName().equalsIgnoreCase("CUSTOMER"))
+                return false;
+        }
+
+        return true;
     }
 
     public GoogleUserProfileResponse getInfoGoogleAccount(String authorizationCode, String codeVerifier) {
