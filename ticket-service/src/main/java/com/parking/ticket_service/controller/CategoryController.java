@@ -6,7 +6,7 @@ import com.parking.ticket_service.dto.request.CategoryUpdateStationRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStatusRequest;
 import com.parking.ticket_service.dto.response.ApiResponse;
 import com.parking.ticket_service.dto.response.CategoryResponse;
-import com.parking.ticket_service.dto.response.PageResponse;
+import com.parking.ticket_service.dto.response.ManagerDetailCategoryResponse;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.service.CategoryService;
 import jakarta.validation.Valid;
@@ -40,10 +40,13 @@ public class CategoryController {
                 .build();
     }
 
-    @GetMapping("/all/{type}")
-    ApiResponse<PageResponse<Category>> findAll(
-            @PathVariable(name = "type")
-            String type,
+    @GetMapping("/all")
+    ApiResponse<List<ManagerDetailCategoryResponse>> findAll(
+            @RequestParam(name = "status", required = false, defaultValue = "")
+            String status,
+
+            @RequestParam(name = "vehicle", required = false, defaultValue = "")
+            String vehicle,
 
             @RequestParam(name = "page", required = false, defaultValue = "1")
             @Min(value = 1)
@@ -55,8 +58,8 @@ public class CategoryController {
             @RequestParam(name = "field", required = false, defaultValue = "CreateAt")
             String field
     ) {
-        return ApiResponse.<PageResponse<Category>>builder()
-                .result(categoryService.findAll(type, page, sort, field))
+        return ApiResponse.<List<ManagerDetailCategoryResponse>>builder()
+                .result(categoryService.findAll(status, vehicle, page, sort, field))
                 .build();
     }
 

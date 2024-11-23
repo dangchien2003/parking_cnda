@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.Set;
-
 @Getter
 @Setter
 @Builder
@@ -39,7 +37,4 @@ public class Category {
     long modifiedAt;
 
     String vehicle;
-
-//    @ManyToMany
-//    Set<Station> stations;
 }

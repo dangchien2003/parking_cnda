@@ -5,7 +5,7 @@ import com.parking.ticket_service.dto.request.CategoryUpdateRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStationRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStatusRequest;
 import com.parking.ticket_service.dto.response.CategoryResponse;
-import com.parking.ticket_service.dto.response.PageResponse;
+import com.parking.ticket_service.dto.response.ManagerDetailCategoryResponse;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.entity.CategoryHistory;
 import com.parking.ticket_service.entity.Station;
@@ -30,10 +30,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.util.EnumUtils;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -80,30 +80,84 @@ public class CategoryService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
-    public PageResponse<Category> findAll(String type, int page, String sort, String field) {
+    public List<ManagerDetailCategoryResponse> findAll(String status, String vehicle, int page, String sort, String field) {
 
         if (!FieldCheckers.hasField(Category.class, field))
             field = "createAt";
 
-        ECategoryStatus status;
+        ECategoryStatus eStatus;
         try {
-            status = ENumUtils.getType(ECategoryStatus.class, type);
+            eStatus = ENumUtils.getType(ECategoryStatus.class, status);
         } catch (AppException e) {
-            throw new AppException(ErrorCode.NOTFOUND_URL);
+            throw new AppException(ErrorCode.INVALID_DATA);
         }
+
+        if (vehicle.isEmpty() || vehicle.equalsIgnoreCase("MOTORBIKE"))
+            vehicle = "MOTORBIKE";
+        else if (vehicle.equalsIgnoreCase("CAR"))
+            vehicle = "CAR";
+        else
+            throw new AppException(ErrorCode.INVALID_DATA);
 
         Pageable pageable = PageUtils
                 .getPageable(page, AmountPage.FIND_CATEGORY.getAmount(), PageUtils.getSort(sort, field));
 
-        Page<Category> pageData = categoryRepository.findAllByStatus(status.name(), pageable);
-        return PageResponse.<Category>builder()
-                .currentPage(page)
-                .pageSize(pageData.getSize())
-                .data(pageData.stream().toList())
-                .build();
+        Page<Category> pageData = categoryRepository.findAllByStatusAndVehicle(eStatus.name(), vehicle, pageable);
 
+        return pageData.getContent().stream().map(item -> {
+            ManagerDetailCategoryResponse record = new ManagerDetailCategoryResponse();
+            record.setId(item.getId());
+            record.setName(item.getName());
+            record.setVehicle(item.getVehicle());
+            record.setType(convertToType(item.getUnit()));
+            record.setTimeEnd(convertToTimeEnd(item.getUnit(), item.getQuantity()));
 
+            return record;
+        }).toList();
     }
+
+    String convertToTimeEnd(String unit, int quantity) {
+        ECategoryUnit eUnit = EnumUtils.findEnumInsensitiveCase(ECategoryUnit.class, unit);
+        switch (eUnit) {
+            case DAY -> {
+                return quantity * 24 + " giờ";
+            }
+            case TIMES -> {
+                return quantity * 24 + " giờ";
+            }
+            case WEEK -> {
+                return quantity * 24 * 7 + " giờ";
+            }
+            case MONTH -> {
+                return quantity * 24 * 30 + " giờ";
+            }
+            default -> {
+                return "...";
+            }
+        }
+    }
+
+    String convertToType(String unit) {
+        ECategoryUnit eUnit = EnumUtils.findEnumInsensitiveCase(ECategoryUnit.class, unit);
+        switch (eUnit) {
+            case DAY -> {
+                return "Vé ngày";
+            }
+            case TIMES -> {
+                return "Vé lượt";
+            }
+            case WEEK -> {
+                return "Vé tuần";
+            }
+            case MONTH -> {
+                return "Vé tháng";
+            }
+            default -> {
+                return unit;
+            }
+        }
+    }
+
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public Category update(CategoryUpdateStationRequest request) {
@@ -144,11 +198,16 @@ public class CategoryService {
 
     public CategoryResponse getInfo(String id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(()-> new AppException(ErrorCode.DATA_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_NOT_FOUND));
         return convert(category);
     }
 
-    public List<CategoryResponse> find(String vehicle,int page) {
+    public List<CategoryResponse> find(String vehicle, int page) {
+        if (!vehicle.equalsIgnoreCase("motorbike")
+                && !vehicle.equalsIgnoreCase("car")) {
+            throw new AppException(ErrorCode.INVALID_DATA);
+        }
+
         Page<Category> data = categoryRepository.findAllByVehicle(vehicle, PageUtils.getPageable(page, 10, PageUtils.getSort("ASC", "unit")));
         return data.getContent().stream().map(this::convert).toList();
     }
@@ -156,17 +215,17 @@ public class CategoryService {
     CategoryResponse convert(Category category) {
         String duration;
         String usage = "Vô hạn";
-        String unit =  category.getUnit().toUpperCase();
-        if(unit.equals(ECategoryUnit.TIMES.name())) {
+        String unit = category.getUnit().toUpperCase();
+        if (unit.equals(ECategoryUnit.TIMES.name())) {
             duration = "24 giờ từ khi sử dụng";
             usage = category.getQuantity() + " lần";
-        }else if(unit.equals(ECategoryUnit.DAY.name())){
+        } else if (unit.equals(ECategoryUnit.DAY.name())) {
             duration = "24 giờ từ lúc mua";
-        }else if(unit.equals(ECategoryUnit.MONTH.name())){
+        } else if (unit.equals(ECategoryUnit.MONTH.name())) {
             duration = "1 tháng từ lúc mua";
-        }else if(unit.equals(ECategoryUnit.WEEK.name())){
+        } else if (unit.equals(ECategoryUnit.WEEK.name())) {
             duration = "1 tuần từ lúc mua";
-        }else {
+        } else {
             duration = "";
         }
 
