@@ -103,6 +103,7 @@ public class CartService {
         return responses;
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public UpdateQuantityCartItemRequest updateQuantity(UpdateQuantityCartItemRequest request) {
         String user = SecurityContextHolder.getContext().getAuthentication().getName();
         CartId cartId = new CartId(request.getTicketId(), user);
@@ -114,5 +115,15 @@ public class CartService {
 
         cartRepository.save(cart);
         return request;
+    }
+
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+    public void moveItem(String ticketId) {
+        String user = SecurityContextHolder.getContext().getAuthentication().getName();
+        CartId cartId = new CartId(ticketId, user);
+        if (cartRepository.existsById(cartId))
+            cartRepository.deleteById(cartId);
+        else
+            throw new AppException(ErrorCode.DATA_NOT_FOUND);
     }
 }

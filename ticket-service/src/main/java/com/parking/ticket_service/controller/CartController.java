@@ -51,4 +51,11 @@ public class CartController {
                 .result(cartService.updateQuantity(request))
                 .build();
     }
+
+    @DeleteMapping("/{ticketId}")
+    ApiResponse<Void> moveItem(@PathVariable(name = "ticketId") String ticket) {
+        cartService.moveItem(ticket);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
 }
