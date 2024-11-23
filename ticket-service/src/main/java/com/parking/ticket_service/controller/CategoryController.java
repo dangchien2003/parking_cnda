@@ -91,4 +91,11 @@ public class CategoryController {
                 .result(categoryService.find(vehicle, page))
                 .build();
     }
+
+    @GetMapping("/detail/{id}")
+    ApiResponse<Category> managerGetCategory(@PathVariable(name = "id") String id) {
+        return ApiResponse.<Category>builder()
+                .result(categoryService.managerGetCategory(id))
+                .build();
+    }
 }

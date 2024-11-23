@@ -202,6 +202,13 @@ public class CategoryService {
         return convert(category);
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    public Category managerGetCategory(String id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_NOT_FOUND));
+        return category;
+    }
+
     public List<CategoryResponse> find(String vehicle, int page) {
         if (!vehicle.equalsIgnoreCase("motorbike")
                 && !vehicle.equalsIgnoreCase("car")) {
