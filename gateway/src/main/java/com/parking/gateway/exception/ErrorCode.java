@@ -12,10 +12,10 @@ import org.springframework.http.HttpStatusCode;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public enum ErrorCode {
-    UNAUTHENTICATED(1010, "Unauthenticated", HttpStatus.UNAUTHORIZED),
-    NOTFOUND_URL(1016, "Url not exists", HttpStatus.BAD_REQUEST),
+    UNAUTHENTICATED(1010, "Chưa xác thực", HttpStatus.UNAUTHORIZED),
+    NOTFOUND_URL(1016, "Đường dẫn không tồn tại", HttpStatus.BAD_REQUEST),
 
-    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
     int code;
     String message;
