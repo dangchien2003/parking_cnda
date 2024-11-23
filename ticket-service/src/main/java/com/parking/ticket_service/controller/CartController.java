@@ -1,6 +1,7 @@
 package com.parking.ticket_service.controller;
 
 import com.parking.ticket_service.dto.request.AddCartRequest;
+import com.parking.ticket_service.dto.request.UpdateQuantityCartItemRequest;
 import com.parking.ticket_service.dto.response.ApiResponse;
 import com.parking.ticket_service.dto.response.CountQuantityItemInCartResponse;
 import com.parking.ticket_service.dto.response.ItemCartResponse;
@@ -41,6 +42,13 @@ public class CartController {
                                                @RequestParam(name = "page", required = false, defaultValue = "1") int page) {
         return ApiResponse.<List<ItemCartResponse>>builder()
                 .result(cartService.getAll(page))
+                .build();
+    }
+
+    @PutMapping("/edit/quantity")
+    ApiResponse<UpdateQuantityCartItemRequest> updateQuantity(@Valid @RequestBody UpdateQuantityCartItemRequest request) {
+        return ApiResponse.<UpdateQuantityCartItemRequest>builder()
+                .result(cartService.updateQuantity(request))
                 .build();
     }
 }

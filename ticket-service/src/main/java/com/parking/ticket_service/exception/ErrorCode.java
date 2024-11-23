@@ -59,6 +59,7 @@ public enum ErrorCode {
     INVALID_COUPON_TIME(6055, "Thời gian phiếu giảm giá không hợp lệ", HttpStatus.BAD_REQUEST),
     COUPON_APPROVED(6056, "Phiếu giảm giá đã được chấp thuận", HttpStatus.BAD_REQUEST),
     INVALID_PAGE(6057, "Số trang không hợp lệ", HttpStatus.BAD_REQUEST),
+    QUANTITY_TOO_SMALL(6058, "Số lượng phải lớn hơn 1", HttpStatus.BAD_REQUEST),
 
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
     ;

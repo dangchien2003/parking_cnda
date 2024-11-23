@@ -1,6 +1,7 @@
 package com.parking.ticket_service.service;
 
 import com.parking.ticket_service.dto.request.AddCartRequest;
+import com.parking.ticket_service.dto.request.UpdateQuantityCartItemRequest;
 import com.parking.ticket_service.dto.response.CountQuantityItemInCartResponse;
 import com.parking.ticket_service.dto.response.ItemCartResponse;
 import com.parking.ticket_service.entity.Cart;
@@ -100,5 +101,18 @@ public class CartService {
         }
 
         return responses;
+    }
+
+    public UpdateQuantityCartItemRequest updateQuantity(UpdateQuantityCartItemRequest request) {
+        String user = SecurityContextHolder.getContext().getAuthentication().getName();
+        CartId cartId = new CartId(request.getTicketId(), user);
+
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new AppException(ErrorCode.DATA_NOT_FOUND));
+
+        cart.setQuantity(request.getQuantity());
+
+        cartRepository.save(cart);
+        return request;
     }
 }
