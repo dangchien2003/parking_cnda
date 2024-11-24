@@ -45,7 +45,7 @@ public class TicketController {
 
     @PutMapping("/cancel/{ticketId}")
     ApiResponse<Void> cancelTicket(@PathVariable(name = "ticketId", required = true) String ticket) {
-        ticketService.cancel(ticket);
+//        ticketService.cancel(ticket);
         return ApiResponse.<Void>builder()
                 .build();
     }

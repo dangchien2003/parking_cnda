@@ -374,26 +374,26 @@ public class TicketService {
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHORIZED));
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public void cancel(String ticketId) {
-
-        Ticket ticket = getTicket(ticketId);
-
-        if (ticket.getTurnTotal() > 0 ||
-                ticket.getCancleAt() > 0 ||
-                !Objects.isNull(ticket.getContentPlate()))
-            throw new AppException(ErrorCode.CANNOT_CANCEL_TICKET);
-
-
-        AddFluctuationRequest addFluctuationRequest = AddFluctuationRequest.builder()
-                .amount(ticket.getCategory().getPrice())
-                .objectId(ticketId)
-                .build();
-        vaultClient.addFluctuation(addFluctuationRequest, EReason.CANCEL_TICKET.name());
-
-        ticket.setCancleAt(Instant.now().toEpochMilli());
-        ticketRepository.save(ticket);
-    }
+//    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+//    public void cancel(String ticketId) {
+//
+//        Ticket ticket = getTicket(ticketId);
+//
+//        if (ticket.getTurnTotal() > 0 ||
+//                ticket.getCancleAt() > 0 ||
+//                !Objects.isNull(ticket.getContentPlate()))
+//            throw new AppException(ErrorCode.CANNOT_CANCEL_TICKET);
+//
+//
+//        AddFluctuationRequest addFluctuationRequest = AddFluctuationRequest.builder()
+//                .amount(ticket.getCategory().getPrice())
+//                .objectId(ticketId)
+//                .build();
+//        vaultClient.addFluctuation(addFluctuationRequest, EReason.CANCEL_TICKET.name());
+//
+//        ticket.setCancleAt(Instant.now().toEpochMilli());
+//        ticketRepository.save(ticket);
+//    }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public TicketResponse updatePlate(TicketUpdatePlateRequest request) {
@@ -514,8 +514,6 @@ public class TicketService {
 
     public Integer countTicketPurchased() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-
-
         return ticketRepository.countByUid(uid);
     }
 

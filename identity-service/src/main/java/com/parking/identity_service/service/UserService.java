@@ -1,6 +1,5 @@
 package com.parking.identity_service.service;
 
-import com.parking.event.dto.EventCustomerCreate;
 import com.parking.identity_service.dto.request.*;
 import com.parking.identity_service.dto.response.GoogleUserProfileResponse;
 import com.parking.identity_service.dto.response.UserResponse;
@@ -17,6 +16,7 @@ import com.parking.identity_service.repository.UserRepository;
 import com.parking.identity_service.repository.httpclient.ProfileClient;
 import com.parking.identity_service.repository.httpclient.VaultClient;
 import com.parking.identity_service.utils.RandomUtils;
+import com.parking.identity_service.validator.ValidEmail;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -87,6 +87,9 @@ public class UserService {
 
     public UserResponse createCustomer(CustomerCreationRequest request) {
 
+        if (!ValidEmail.isValidEmail(request.getEmail()))
+            throw new AppException(ErrorCode.INVALID_EMAIL);
+
         User user = userMapper.customerCreationRequestToUser(request);
 
         Set<String> defaultRoles = new HashSet<>();
@@ -132,7 +135,7 @@ public class UserService {
 
     public UserResponse getUser(String id) {
         User user = userRepository.findById(id)
-                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXIST));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
 
         return userMapper.toUserResponse(user);
     }
