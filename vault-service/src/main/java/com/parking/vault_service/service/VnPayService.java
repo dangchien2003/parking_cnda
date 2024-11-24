@@ -92,8 +92,7 @@ public class VnPayService {
         VnPayCheckTransactionResponse response = vnPayClient.checkTransaction(checkRequest);
 
         if (response.getVnpAmount() / 100 == deposit.getAmount()) {
-            if (response.getVnpTransactionStatus() == null ||
-                    response.getVnpTransactionStatus().equals("00") ||
+            if (response.getVnpTransactionStatus().equals("00") &&
                     response.getVnpResponseCode().equals("00")) {
                 return true;
             }
