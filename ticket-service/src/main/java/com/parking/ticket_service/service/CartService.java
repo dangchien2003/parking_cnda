@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -73,7 +75,7 @@ public class CartService {
         int pageSize = 20;
         String user = SecurityContextHolder.getContext().getAuthentication().getName();
 
-
+        // Lấy danh sách carts
         List<Cart> carts = cartRepository.findAllById_Uid(user,
                 PageUtils.getPageable(1, pageSize, PageUtils.getSort("DESC", "createdAt")));
         carts.sort((c1, c2) -> {
@@ -82,21 +84,31 @@ public class CartService {
             return c1.getId().getTicketId().compareTo(c2.getId().getTicketId());
         });
 
-        List<String> categoryIds = carts.stream().map(cart -> cart.getId().getTicketId()).toList();
+        // Lấy danh sách categoryIds từ carts
+        List<String> categoryIds = carts.stream()
+                .map(cart -> cart.getId().getTicketId())
+                .toList();
 
+        // Lấy danh sách categories từ categoryIds
         List<Category> categories = categoryRepository.findAllByIdIn(categoryIds,
                 PageUtils.getPageable(page, pageSize, PageUtils.getSort("DESC", "id")));
 
-        List<ItemCartResponse> responses = new ArrayList<>();
+        // Tạo Map ánh xạ từ categoryId sang Category
+        Map<String, Category> categoryMap = categories.stream()
+                .collect(Collectors.toMap(Category::getId, category -> category));
 
-        for (int i = 0; i < carts.size(); i++) {
-            Cart cart = carts.get(i);
-            Category category = categories.get(i);
-            if (!cart.getId().getTicketId().equals(category.getId())) {
-                log.error("Chưa được sắp xếp");
+        // Duyệt qua danh sách carts và ánh xạ với categories theo thứ tự
+        List<ItemCartResponse> responses = new ArrayList<>();
+        for (Cart cart : carts) {
+            String ticketId = cart.getId().getTicketId();
+            Category category = categoryMap.get(ticketId);
+
+            if (category == null) {
+                log.error("Không tìm thấy category cho ticketId: {}", ticketId);
                 throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
             }
 
+            // Thêm vào danh sách responses
             responses.add(cartMapper.toItemCartResponse(category, cart.getQuantity()));
         }
 

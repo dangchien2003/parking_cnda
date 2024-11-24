@@ -215,7 +215,7 @@ public class CategoryService {
             throw new AppException(ErrorCode.INVALID_DATA);
         }
 
-        Page<Category> data = categoryRepository.findAllByVehicle(vehicle, PageUtils.getPageable(page, 10, PageUtils.getSort("ASC", "unit")));
+        Page<Category> data = categoryRepository.findAllByStatusAndVehicle(ECategoryStatus.ACTIVE.name(), vehicle, PageUtils.getPageable(page, 10, PageUtils.getSort("ASC", "unit")));
         return data.getContent().stream().map(this::convert).toList();
     }
 
