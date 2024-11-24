@@ -35,6 +35,14 @@ public class DepositController {
                 .build();
     }
 
+    @GetMapping("internal/callback/check")
+    ApiResponse<Void> checkDeposit(HttpServletRequest http, @RequestParam("vnp_TxnRef") String depositId) {
+        depositService.checkDeposit(http, depositId);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
+
+
     @GetMapping("/all/{type}")
     ApiResponse<PageResponse<Deposit>> getAll(
             @PathVariable(name = "type")

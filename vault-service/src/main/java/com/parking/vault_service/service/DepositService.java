@@ -104,6 +104,34 @@ public class DepositService {
         return response;
     }
 
+    public void checkDeposit(HttpServletRequest request, String depositId) {
+        Deposit deposit = depositRepository.findById(depositId)
+                .orElseThrow(() -> new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED));
+
+        if (deposit.getActionAt() != null)
+            throw new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED);
+
+        if (!vnPayService.checkPaymentSuccess(request, deposit)) {
+            log.warn("chưa thanh toán: " + depositId);
+            return;
+        }
+
+        deposit.setActionAt(Instant.now().toEpochMilli());
+        deposit.setActionBy("CALLBACK VNPAY");
+        depositRepository.save(deposit);
+
+        Owner owner = ownerRepository.findById(deposit.getOwnerId())
+                .orElse(null);
+
+        if (owner == null) {
+            log.warn("owner not exist of deposit: " + depositId);
+            return;
+        }
+
+        owner.setBalance(owner.getBalance() + deposit.getAmount());
+        ownerRepository.save(owner);
+    }
+
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public PageResponse<Deposit> getAll(String type, int page, String sort) {
 

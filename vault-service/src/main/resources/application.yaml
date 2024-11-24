@@ -13,6 +13,9 @@ spring:
       ddl-auto: update
     show-sql: true
 
+vnPay:
+  api-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+
 TPBank:
   username: ${TPB_USERNAME}
   password: ${TPB_PASSWORD}

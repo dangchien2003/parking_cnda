@@ -14,7 +14,7 @@ import java.util.*;
 @FieldDefaults(makeFinal = true)
 public class VNPAYConfig {
     public static String vnpPayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnpReturnUrl = "http://localhost:8084/vault";
+    public static String vnpReturnUrl = "http://localhost:3000/";
     public static String vnpTmnCode = "QTYQ5WQS";
     public static String secretKey = "H6I01STMJZBGJC2PHEPPR07L6E0A0I8K";
 

@@ -4,6 +4,7 @@ import com.parking.vault_service.exception.AppException;
 import com.parking.vault_service.exception.ErrorCode;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -12,6 +13,13 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 public class TimeUtils {
+
+    public static String convertTimestampToString(long timestamp, String format) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+        return dateTime.format(formatter);
+    }
+
     public static String convertTime(long timeInMillis, String format) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
         Date date = new Date(timeInMillis);
@@ -36,12 +44,12 @@ public class TimeUtils {
         LocalDateTime startOfDay = date.withDayOfMonth(1).atStartOfDay();
         return startOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
-  public static long getStartOfDay(String dateString) {
+
+    public static long getStartOfDay(String dateString) {
         LocalDate date = LocalDate.parse(dateString, DATE_FORMATTER);
         LocalDateTime startOfDay = date.atStartOfDay();
         return startOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
-
 
 
     public static long getEndOfDay(String dateString) {

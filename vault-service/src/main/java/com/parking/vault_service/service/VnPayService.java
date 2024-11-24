@@ -1,8 +1,12 @@
 package com.parking.vault_service.service;
 
 import com.parking.vault_service.configuration.VNPAYConfig;
-import com.parking.vault_service.dto.response.CheckTransactionResponse;
+import com.parking.vault_service.dto.request.VnPayCheckTransactionRequest;
+import com.parking.vault_service.dto.response.VnPayCheckTransactionResponse;
+import com.parking.vault_service.entity.Deposit;
+import com.parking.vault_service.repository.httpclient.VnPayClient;
 import com.parking.vault_service.utils.PaymentUtils;
+import com.parking.vault_service.utils.TimeUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +24,7 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class VnPayService {
-
+    VnPayClient vnPayClient;
 
     @NonFinal
     String secretKey = VNPAYConfig.secretKey;
@@ -55,10 +59,8 @@ public class VnPayService {
     }
 
 
-    public CheckTransactionResponse queryTransaction(HttpServletRequest request) {
+    public boolean checkPaymentSuccess(HttpServletRequest request, Deposit deposit) {
         Map<String, String[]> params = request.getParameterMap();
-//        if (!isValidVnPayCallback(params))
-//            throw new AppException(ErrorCode.VALIDATE_INFO_PAYMENT_ERROR);
 
         String vnpRequestId = UUID.randomUUID().toString();
         String vnpVersion = "2.1.0";
@@ -69,67 +71,36 @@ public class VnPayService {
         String ipAddress = PaymentUtils.getClientIP(request);
         String vnpOrderInfo = "Kiem tra ket qua GD OrderId:" + vnpTxnRef;
 
-//        Transaction transaction = getTransaction(vnpTxnRef);
-//        if (transaction.getStatus().equals(TransactionStatus.SUCCESS.name()))
-//            throw new AppException(ErrorCode.TRANSACTION_VERIFIED);
-//
-//        String vnpCreateDate = TimeUtils.convertTimestampToString(transaction.getCreatedAt(), "yyyyMMddHHmmss");
-//
-//        String hashData = String.join("|", vnpRequestId, vnpVersion, vnpCommand, vnpTmnCode, vnpTxnRef, paymentDate, vnpCreateDate, ipAddress, vnpOrderInfo);
-//        String vnpSecureHash = VNPAYConfig.hmacSHA512(VNPAYConfig.secretKey, hashData);
-//
-//        VnPayCheckTransactionRequest checkRequest = VnPayCheckTransactionRequest.builder()
-//                .vnpRequestId(vnpRequestId)
-//                .vnpVersion(vnpVersion)
-//                .vnpCommand(vnpCommand)
-//                .vnpTmnCode(vnpTmnCode)
-//                .vnpTxnRef(vnpTxnRef)
-//                .vnpOrderInfo(vnpOrderInfo)
-//                .vnpTransactionDate(paymentDate)
-//                .vnpCreateDate(vnpCreateDate)
-//                .vnpIpAddr(ipAddress)
-//                .vnpSecureHash(vnpSecureHash)
-//                .build();
-//
-//        VnPayCheckTransactionResponse response = vnPayClient.checkTransaction(checkRequest);
-//
-//        if (response.getVnpTransactionStatus() == null ||
-//                !response.getVnpTransactionStatus().equals("00") ||
-//                !response.getVnpResponseCode().equals("00")) {
-//            if (transactionRepository.updateStatus(vnpTxnRef, TransactionStatus.ERROR, Instant.now().toEpochMilli()) != 1) {
-//                log.error("update status error fail for transaction: " + vnpTxnRef);
-//                throw new AppException(ErrorCode.UPDATE_STATUS_FAIL);
-//            }
-//            throw new AppException(ErrorCode.TRANSACTION_ERROR);
-//        }
-//
-//        if (transactionRepository.updateStatus(vnpTxnRef, TransactionStatus.SUCCESS, Instant.now().toEpochMilli()) != 1) {
-//            log.error("update status success error for transaction: " + vnpTxnRef);
-//            throw new AppException(ErrorCode.PAYMENT_SUCCESS_BUT_UPDATE_STATUS_FAIL);
-//        }
-//
-//        try {
-//            orderClient.callPaymentSuccess(vnpTxnRef);
-//        } catch (Exception e) {
-//            log.error("orderClient.callPaymentSuccess error: ", e);
-//            throw new AppException(ErrorCode.ERROR_CALL_TO_ORDER_CLIENT);
-//        }
+        String vnpCreateDate = TimeUtils.convertTimestampToString(deposit.getCreateAt(), "yyyyMMddHHmmss");
 
-        return CheckTransactionResponse.builder()
-                .orderId(vnpTxnRef)
+        String hashData = String.join("|", vnpRequestId, vnpVersion, vnpCommand, vnpTmnCode, vnpTxnRef, paymentDate, vnpCreateDate, ipAddress, vnpOrderInfo);
+        String vnpSecureHash = VNPAYConfig.hmacSHA512(VNPAYConfig.secretKey, hashData);
+
+        VnPayCheckTransactionRequest checkRequest = VnPayCheckTransactionRequest.builder()
+                .vnpRequestId(vnpRequestId)
+                .vnpVersion(vnpVersion)
+                .vnpCommand(vnpCommand)
+                .vnpTmnCode(vnpTmnCode)
+                .vnpTxnRef(vnpTxnRef)
+                .vnpOrderInfo(vnpOrderInfo)
+                .vnpTransactionDate(paymentDate)
+                .vnpCreateDate(vnpCreateDate)
+                .vnpIpAddr(ipAddress)
+                .vnpSecureHash(vnpSecureHash)
                 .build();
-    }
 
-//    Transaction getTransaction(String orderId) {
-//        try {
-//            return transactionRepository.getTransaction(orderId);
-//        } catch (EmptyResultDataAccessException e) {
-//            throw new AppException(ErrorCode.NOTFOUND_DATA);
-//        } catch (Exception e) {
-//            log.error("transactionRepository.getTransaction error: ", e);
-//            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-//        }
-//    }
+        VnPayCheckTransactionResponse response = vnPayClient.checkTransaction(checkRequest);
+
+        if (response.getVnpAmount() / 100 == deposit.getAmount()) {
+            if (response.getVnpTransactionStatus() == null ||
+                    response.getVnpTransactionStatus().equals("00") ||
+                    response.getVnpResponseCode().equals("00")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     boolean isValidVnPayCallback(Map<String, String[]> queryParams) {
         Map<String, String> flatParams = new LinkedHashMap<>();

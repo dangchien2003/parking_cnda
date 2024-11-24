@@ -23,7 +23,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @NonFinal
     static final String[] PUBLIC_ENDPOINT = {
-            "/internal/owner/registration"
+            "/internal/owner/registration",
     };
     CustomJwtDecoder customJwtDecoder;
 
@@ -35,6 +35,8 @@ public class SecurityConfig {
                 authorizeHttpRequests(request ->
                         request
                                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINT)
+                                .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/deposit/internal/callback/check")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
