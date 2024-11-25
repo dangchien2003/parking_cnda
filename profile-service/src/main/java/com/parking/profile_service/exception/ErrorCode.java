@@ -21,7 +21,7 @@ public enum ErrorCode {
     INVALID_EMAIL(4007, "Định dạng email không đúng", HttpStatus.BAD_REQUEST),
     INVALID_KEY(4008, "Tin nhắn không hợp lệ key", HttpStatus.BAD_REQUEST),
     BLANK_TOKEN(4009, "Không thể để trống mã thông báo", HttpStatus.BAD_REQUEST),
-    UNAUTHENTICATED(4010, "Chưa xác thực", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED(5010, "Chưa xác thực", HttpStatus.UNAUTHORIZED),
     NOTFOUND_METHOD(4011, "Url không hỗ trợ phương thức", HttpStatus.BAD_REQUEST),
     BODY_PARSE_FAIL(4012, "Phân tích cú pháp nội dung không thành công", HttpStatus.BAD_REQUEST),
     INVALID_TOKEN(4013, "Mã thông báo không hợp lệ", HttpStatus.BAD_REQUEST),

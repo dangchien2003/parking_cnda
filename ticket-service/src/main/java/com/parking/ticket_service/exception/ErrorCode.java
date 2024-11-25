@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatusCode;
 @AllArgsConstructor
 public enum ErrorCode {
     INVALID_KEY(6008, "Sai dữ liệu", HttpStatus.BAD_REQUEST),
-    UNAUTHENTICATED(6010, "Cần xác thực tài khoản", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED(5010, "Cần xác thực tài khoản", HttpStatus.UNAUTHORIZED),
     NOTFOUND_METHOD(6011, "Không tìm thấy đường dẫn", HttpStatus.BAD_REQUEST),
     BODY_PARSE_FAIL(6012, "Không thể giải mã dữ liệu", HttpStatus.BAD_REQUEST),
     INVALID_TOKEN(6013, "Định danh không có hiệu lực", HttpStatus.BAD_REQUEST),

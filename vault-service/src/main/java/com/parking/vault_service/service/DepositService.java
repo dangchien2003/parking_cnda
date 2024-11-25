@@ -250,21 +250,21 @@ public class DepositService {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 //        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
 
-        int total = depositRepository.calculateTotalAmountWhereOwnerId(uid);
-        return total;
+        Integer total = depositRepository.calculateTotalAmountWhereOwnerId(uid);
+        return total == null ? 0 : total;
     }
 
     public Integer totalApproved() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-        int total = depositRepository.calculateTotalApprovedWhereOwnerId(uid);
-        return total;
+        Integer total = depositRepository.calculateTotalApprovedWhereOwnerId(uid);
+        return total == null ? 0 : total;
     }
 
     public Integer totalWaitApprove() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
-        int total = depositRepository.calculateTotalWaitApproveWhereOwnerId(uid);
-        return total;
+        Integer total = depositRepository.calculateTotalWaitApproveWhereOwnerId(uid);
+
+        return total == null ? 0 : total;
     }
 
     public List<HistoryDeposit> history(int page, String status, String date) {
