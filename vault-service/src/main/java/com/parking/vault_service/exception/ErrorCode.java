@@ -35,7 +35,7 @@ public enum ErrorCode {
     CANNOT_USE_WALLET(5031, "Không thể sử dụng ví", HttpStatus.BAD_REQUEST),
     DEPOSIT_FAIL(5032, "Gửi tiền không thành công", HttpStatus.BAD_REQUEST),
     INVALID_DATA(5033, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST),
-    MANY_DEPOSIT(5034, "Bạn đã gửi quá nhiều lệnh gửi tiền", HttpStatus.BAD_REQUEST),
+    MANY_DEPOSIT(5034, "Bạn đã gửi lệnh quá 3 lần. Hãy huỷ giao dịch cũ", HttpStatus.BAD_REQUEST),
 
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
