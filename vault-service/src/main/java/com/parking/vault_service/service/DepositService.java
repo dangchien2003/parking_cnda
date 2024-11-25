@@ -12,10 +12,13 @@ import com.parking.vault_service.entity.Fluctuation;
 import com.parking.vault_service.entity.Owner;
 import com.parking.vault_service.enums.EGetAllDeposit;
 import com.parking.vault_service.enums.EPageQuantity;
+import com.parking.vault_service.enums.EReason;
+import com.parking.vault_service.enums.ETransaction;
 import com.parking.vault_service.exception.AppException;
 import com.parking.vault_service.exception.ErrorCode;
 import com.parking.vault_service.mapper.DepositMapper;
 import com.parking.vault_service.repository.DepositRepository;
+import com.parking.vault_service.repository.FluctuationRepository;
 import com.parking.vault_service.repository.OwnerRepository;
 import com.parking.vault_service.utils.ENumUtil;
 import com.parking.vault_service.utils.PageUtil;
@@ -43,6 +46,7 @@ import java.util.*;
 public class DepositService {
     VnPayService vnPayService;
     DepositRepository depositRepository;
+    FluctuationRepository fluctuationRepository;
     OwnerRepository ownerRepository;
     DepositMapper depositMapper;
     ApproveDeposit approveDeposit;
@@ -130,6 +134,17 @@ public class DepositService {
 
         owner.setBalance(owner.getBalance() + deposit.getAmount());
         ownerRepository.save(owner);
+
+        Fluctuation fluctuation = Fluctuation.builder()
+                .id(UUID.randomUUID().toString())
+                .depositId(depositId)
+                .ownerId(deposit.getOwnerId())
+                .reason(EReason.APPROVE.getValue())
+                .amount(deposit.getAmount())
+                .transaction(ETransaction.CREDIT.name())
+                .createAt(Instant.now().toEpochMilli())
+                .build();
+        fluctuationRepository.save(fluctuation);
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
