@@ -117,13 +117,13 @@ public class FluctuationService {
 
         List<Fluctuation> fluctuations = null;
 
-        if (start != 0 && type != null) {
+        if (start != 0 && !type.isEmpty()) {
             fluctuations = fluctuationRepository.findAllByOwnerIdAndReasonAndCreateAtBetweenOrderByCreateAtDesc(
                     uid, type, start, end, PageUtil.getPageable(page, 20, sort, field));
         } else if (start != 0) {
             fluctuations = fluctuationRepository.findAllByOwnerIdAndCreateAtBetweenOrderByCreateAtDesc(
                     uid, start, end, PageUtil.getPageable(page, 20, sort, field));
-        } else if (type != null) {
+        } else if (!type.isEmpty()) {
             fluctuations = fluctuationRepository.findAllByOwnerIdAndReasonOrderByCreateAtDesc(
                     uid, type, PageUtil.getPageable(page, 20, sort, field));
         } else {

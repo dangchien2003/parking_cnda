@@ -9,6 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class HistoryDeposit {
+    String id;
     String time;
     int amount;
     String status;

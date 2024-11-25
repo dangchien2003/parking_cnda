@@ -256,13 +256,8 @@ public class DepositService {
 
     public Integer totalApproved() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
-
-        int total = totalDeposit();
-        int wait = totalWaitApprove();
-
-
-        return total - wait;
+        int total = depositRepository.calculateTotalApprovedWhereOwnerId(uid);
+        return total;
     }
 
     public Integer totalWaitApprove() {
@@ -300,10 +295,21 @@ public class DepositService {
 
         return deposits.stream().map(deposit -> {
             HistoryDeposit historyDeposit = new HistoryDeposit();
+            historyDeposit.setId(deposit.getId());
             historyDeposit.setAmount(deposit.getAmount());
             historyDeposit.setTime(TimeUtils.convertTime(deposit.getCreateAt(), "dd/MM/yyyy HH:mm"));
-            historyDeposit.setStatus(deposit.getActionAt() == null ? "Chờ duyệt" : "Đã duyệt");
+            historyDeposit.setStatus(getStatus(deposit));
             return historyDeposit;
         }).toList();
+    }
+
+    String getStatus(Deposit deposit) {
+        if (deposit.getCancelAt() != null) {
+            return "Đã huỷ";
+        } else if (deposit.getActionAt() != null) {
+            return "Đã duyệt";
+        } else {
+            return "Chờ duyệt";
+        }
     }
 }

@@ -64,7 +64,7 @@ public class FluctuationController {
                 .build();
     }
 
-    @GetMapping("/")
+    @GetMapping
     ApiResponse<List<FluctuationResponse>> customerGetAll(
             @RequestParam(name = "type", required = false)
             String type,

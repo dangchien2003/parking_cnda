@@ -36,13 +36,18 @@ public interface DepositRepository extends JpaRepository<Deposit, String> {
     @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE ownerId = :ownerId")
     Integer calculateTotalAmountWhereOwnerId(@Param("ownerId") String ownerId);
 
-  @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE actionAt IS NULL AND ownerId = :ownerId")
+    @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE actionAt IS NULL AND cancelAt IS NULL AND ownerId = :ownerId")
     Integer calculateTotalWaitApproveWhereOwnerId(@Param("ownerId") String ownerId);
+
+    @Query("SELECT SUM(amount) AS totalAmount FROM Deposit WHERE cancelAt IS NULL AND actionAt IS NOT NULL AND ownerId = :ownerId")
+    Integer calculateTotalApprovedWhereOwnerId(@Param("ownerId") String ownerId);
 
     List<Deposit> findAllByOwnerId(String owner, Pageable pageable);
 
     List<Deposit> findAllByCreateAtIsBetweenAndOwnerId(long start, long end, String ownerId, Pageable pageable);
+
     List<Deposit> findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNull(long start, long end, String ownerId, Pageable pageable);
+
     List<Deposit> findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNotNull(long start, long end, String ownerId, Pageable pageable);
 
 }
