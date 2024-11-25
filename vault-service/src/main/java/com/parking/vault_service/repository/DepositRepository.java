@@ -23,6 +23,8 @@ public interface DepositRepository extends JpaRepository<Deposit, String> {
 
     Page<Deposit> findAllByOwnerIdAndActionAtIsNotNull(String ownerId, Pageable pageable);
 
+    Page<Deposit> findAllByOwnerIdAndActionAtIsNullAndCancelAtIsNull(String ownerId, Pageable pageable);
+
     Page<Deposit> findAllByOwnerIdAndActionAtIsNull(String ownerId, Pageable pageable);
 
     List<Deposit> findByIdInAndActionAtIsNull(List<String> idDeposits);
@@ -49,5 +51,7 @@ public interface DepositRepository extends JpaRepository<Deposit, String> {
     List<Deposit> findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNull(long start, long end, String ownerId, Pageable pageable);
 
     List<Deposit> findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNotNull(long start, long end, String ownerId, Pageable pageable);
+
+    List<Deposit> findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNullAndCancelAtIsNull(long start, long end, String ownerId, Pageable pageable);
 
 }

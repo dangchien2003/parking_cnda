@@ -2,8 +2,6 @@ package com.parking.ticket_service.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -21,15 +19,17 @@ public class Ticket {
 
     String uid;
 
-    @ManyToOne
-    @JoinColumn(name = "categoryHistoryId")
-    CategoryHistory category;
+    int price;
+
+    String category;
 
     int turnTotal;
 
     String contentPlate;
 
     long buyAt;
+
+    long start;
 
     long expireAt;
 

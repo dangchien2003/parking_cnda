@@ -270,14 +270,16 @@ public class DepositService {
     public List<HistoryDeposit> history(int page, String status, String date) {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 //        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
-        Pageable pageable = PageUtil.getPageable(page, 10, PageUtil.getSort("DESC", "createAt"));
+        Pageable pageable = PageUtil.getPageable(page, 20, PageUtil.getSort("DESC", "createAt"));
         List<Deposit> deposits;
         if (status == null && date == null) {
             deposits = depositRepository.findAllByOwnerId(uid, pageable);
         } else if (status != null && date == null) {
             if (status.equals("approved"))
                 deposits = depositRepository.findAllByOwnerIdAndActionAtIsNotNull(uid, pageable).getContent();
-            else
+            else if (status.equals("wait")) {
+                deposits = depositRepository.findAllByOwnerIdAndActionAtIsNullAndCancelAtIsNull(uid, pageable).getContent();
+            } else
                 deposits = depositRepository.findAllByOwnerIdAndActionAtIsNull(uid, pageable).getContent();
         } else if (status == null && date != null) {
             long start = TimeUtils.getStartOfDay(date);
@@ -288,7 +290,9 @@ public class DepositService {
             long end = TimeUtils.getEndOfDay(date);
             if (status.equals("approved"))
                 deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNotNull(start, end, uid, pageable);
-            else
+            else if (status.equals("wait")) {
+                deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNullAndCancelAtIsNull(start, end, uid, pageable);
+            } else
                 deposits = depositRepository.findAllByCreateAtIsBetweenAndOwnerIdAndActionAtIsNull(start, end, uid, pageable);
         }
 

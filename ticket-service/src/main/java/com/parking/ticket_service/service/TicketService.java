@@ -481,14 +481,14 @@ public class TicketService {
         return Instant.now().plus(1, chronoUnit).toEpochMilli();
     }
 
-    public List<TicketResponse> getAll(int page) {
-        int pageSize = 5;
+    public List<TicketResponse> getAll(int page, String vehicle, String status) {
+        int pageSize = 20;
 
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Pageable pageable = PageUtils.getPageable(page, pageSize, PageUtils.getSort("ESC", "buyAt"));
         Page<Ticket> pageData = ticketRepository.findByUid(uid, pageable);
-
+        
         return pageData.getContent().stream().map(ticket -> {
             TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
             if (ticket.getExpireAt() < Instant.now().toEpochMilli()) {
