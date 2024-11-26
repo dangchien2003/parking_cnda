@@ -15,7 +15,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -71,14 +70,14 @@ public class CustomerProfileService {
 
     public CustomerProfileResponse getProfile(String uid) {
 
-        if(uid == null) {
+        if (uid == null) {
             uid = SecurityContextHolder.getContext().getAuthentication().getName();
         }
 
         ProfileCustomer profileCustomer = customerProfileRepository.findById(uid)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_EXIST));
 
-        UserResponse  userResponse = identityClient.getUser(uid).getResult();
+        UserResponse userResponse = identityClient.getUser(uid).getResult();
         CustomerProfileResponse customerProfileResponse = customerProfileMapper.toCustomerProfileResponse(profileCustomer);
         customerProfileResponse.setEmail(userResponse.getEmail());
         return customerProfileResponse;
