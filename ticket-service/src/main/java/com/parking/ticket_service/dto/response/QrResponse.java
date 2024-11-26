@@ -1,6 +1,8 @@
 package com.parking.ticket_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,34 +13,13 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TicketResponse {
-    int turnTotal;
+public class QrResponse {
+    @Id
+    String contain;
 
-    String contentPlate;
-
-    String buyTime;
-
-    String expireTime;
-
+    @NotNull
     String ticketId;
 
-    String name;
-
-    String vehicle;
-
-    String status;
-
-    int price;
-
-    String usedTime;
-
-    long buyAt;
-
-    long startAt;
-
-    String startTime;
-
-    long expireAt;
-
-    long usedAt;
+    long createAt;
+    String createTime;
 }

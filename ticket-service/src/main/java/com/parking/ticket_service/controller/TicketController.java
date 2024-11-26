@@ -5,7 +5,6 @@ import com.parking.ticket_service.dto.request.BuyTicketRequest;
 import com.parking.ticket_service.dto.request.CancelQrRequest;
 import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
 import com.parking.ticket_service.dto.response.ApiResponse;
-import com.parking.ticket_service.dto.response.InfoTicketResponse;
 import com.parking.ticket_service.dto.response.RecentActivityResponse;
 import com.parking.ticket_service.dto.response.TicketResponse;
 import com.parking.ticket_service.service.TicketService;
@@ -32,8 +31,8 @@ public class TicketController {
     }
 
     @GetMapping("/{ticket}")
-    ApiResponse<InfoTicketResponse> info(@PathVariable(name = "ticket") String ticket) {
-        return ApiResponse.<InfoTicketResponse>builder()
+    ApiResponse<TicketResponse> info(@PathVariable(name = "ticket") String ticket) {
+        return ApiResponse.<TicketResponse>builder()
                 .result(ticketService.getInfoTicket(ticket))
                 .build();
     }

@@ -9,7 +9,6 @@ import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.entity.Plate;
-import com.parking.ticket_service.entity.PlateId;
 import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.enums.ECategoryUnit;
 import com.parking.ticket_service.enums.ECloudinary;
@@ -317,9 +316,20 @@ public class TicketService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public InfoTicketResponse getInfoTicket(String ticketId) {
-        return ticketMapper.toInfoTicketResponse(
-                getTicket(ticketId));
+    public TicketResponse getInfoTicket(String ticketId) {
+        Ticket ticket = getTicket(ticketId);
+
+        if (ticket == null)
+            throw new AppException(ErrorCode.TICKET_NOTFOUND);
+        
+        TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
+        ticketResponse.setBuyTime(TimeUtils.convertTime(ticket.getBuyAt(), "HH:mm dd/MM/yyyy"));
+        ticketResponse.setExpireTime(TimeUtils.convertTime(ticket.getExpireAt(), "HH:mm dd/MM/yyyy"));
+        ticketResponse.setStartTime(TimeUtils.convertTime(ticket.getStartAt(), "HH:mm dd/MM/yyyy"));
+        if (ticket.getUsedAt() != 0) {
+            ticketResponse.setUsedTime(TimeUtils.convertTime(ticket.getUsedAt(), "HH:mm dd/MM/yyyy"));
+        }
+        return ticketResponse;
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
@@ -559,21 +569,12 @@ public class TicketService {
 
         return pageData.getContent().stream().map(ticket -> {
             TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
-            if (ticket.getExpireAt() < Instant.now().toEpochMilli()) {
-                ticketResponse.setStatus("Đã hết hạn");
-            } else if (ticket.getTurnTotal() == 0) {
+            if (ticket.getStartAt() > Instant.now().toEpochMilli()) {
                 ticketResponse.setStatus("Chờ sử dụng");
-            } else if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES)
-                    && ticket.getCategory().getQuantity() <= ticket.getTurnTotal()) {
-                Plate plate = plateRepository.
-                        findById(new PlateId(ticket.getId(), ticket.getTurnTotal())).orElse(null);
-
-                if (plate.getCheckoutAt() > 0)
-                    ticketResponse.setStatus("Chờ sử dụng");
-                else
-                    ticketResponse.setStatus("Đang sử dụng");
-            } else {
+            } else if (ticket.getExpireAt() < Instant.now().toEpochMilli()) {
                 ticketResponse.setStatus("Đã hết hạn");
+            } else {
+                ticketResponse.setStatus("Đang sử dụng");
             }
 
             return ticketResponse;
