@@ -30,10 +30,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +75,7 @@ public class FluctuationService {
         }
 
         Fluctuation fluctuation = Fluctuation.builder()
+                .id(UUID.randomUUID().toString())
                 .ownerId(owner.getId())
                 .amount(amount)
                 .transaction(transaction.getValue())

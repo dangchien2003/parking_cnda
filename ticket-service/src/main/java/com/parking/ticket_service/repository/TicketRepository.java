@@ -4,6 +4,8 @@ import com.parking.ticket_service.entity.Ticket;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,12 +21,14 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
 
     int countByUid(String uid);
 
-//    @Query(value = "SELECT t1_0.id, t1_0.buyAt, t1_0.category, t1_0.contentPlate, t1_0.expireAt, t1_0.price, t1_0.startAt, t1_0.turnTotal, t1_0.uid, t1_0.usedAt " +
-//            "FROM ticket t1_0 " +
-//            "LEFT JOIN category c1_0 ON c1_0.id = t1_0.category " +
-//            "WHERE ((t1_0.startAt BETWEEN :startAt and :expireAt) OR (t1_0.expireAt BETWEEN :startAt and :expireAt)) " +
-//            "AND c1_0.vehicle = :vehicle")
-//    List<Ticket> findAllTicket(long startAt, long expireAt, String vehicle);
-
-    List<Ticket> findAllByStartAtBetweenOrExpireAtBetweenAndCategory_VehicleOrderByStartAtAsc(long startAt1, long expireAt1, long startAt2, long expireAt2, String vehicle);
+    @Query("SELECT t FROM ticket t " +
+            "JOIN t.category c " +
+            "WHERE (t.startAt BETWEEN :start1 AND :end1 OR t.expireAt BETWEEN :start2 AND :end2) " +
+            "AND c.vehicle = :vehicle " +
+            "ORDER BY t.startAt ASC")
+    List<Ticket> findTickets(@Param("start1") Long start1,
+                             @Param("end1") Long end1,
+                             @Param("start2") Long start2,
+                             @Param("end2") Long end2,
+                             @Param("vehicle") String vehicle);
 }

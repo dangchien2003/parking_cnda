@@ -11,7 +11,6 @@ import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.entity.Plate;
 import com.parking.ticket_service.entity.PlateId;
 import com.parking.ticket_service.entity.Ticket;
-import com.parking.ticket_service.enums.ECategoryStatus;
 import com.parking.ticket_service.enums.ECategoryUnit;
 import com.parking.ticket_service.enums.ECloudinary;
 import com.parking.ticket_service.enums.EReason;
@@ -46,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -63,6 +63,7 @@ public class TicketService {
     VaultClient vaultClient;
     ObjectMapper objectMapper;
     CloudinaryUploader cloudinaryUploader;
+    CategoryService categoryService;
 
     static final long EXTENDED_UNIT_PRICE_ONE_MINUTE = 1_000;
     static final String KEY_CANCEL_QR = "CANCELED_";
@@ -428,36 +429,104 @@ public class TicketService {
         Category category = categoryRepository.findById(request.getCategory())
                 .orElse(null);
 
-        if (Objects.isNull(category) || !category.getStatus().equals(ECategoryStatus.ACTIVE.name()))
-            throw new AppException(ErrorCode.INVALID_CATEGORY);
-        return null;
+        if (category.getStatus().equalsIgnoreCase("INACTIVE"))
+            throw new AppException("Không tìm thấy vé");
 
-//        long expire;
-//
-//
-//        ApiResponse<BalenceResponse> balanceResponse = vaultClient.getBalance();
-//
-//        if (balanceResponse.getResult().getBalence() < history.getPrice())
-//            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
-//
-//        String ticketId = UUID.randomUUID().toString();
-//
-////        AddFluctuationRequest addFluctuationRequest = AddFluctuationRequest.builder()
-////                .objectId(ticketId)
-////                .amount(history.getPrice())
-////                .build();
-////        vaultClient.addFluctuation(addFluctuationRequest, EReason.BUY_TICKET.name());
-//
-//        Ticket ticket = Ticket.builder()
-//                .id(ticketId)
-//                .uid(uid)
-//                .category(category)
-//                .buyAt(Instant.now().toEpochMilli())
-//                .expireAt(expire)
-//                .build();
-//
-//        ticket = ticketRepository.save(ticket);
-//        return ticketMapper.toTicketResponse(ticket);
+        long start = TimeUtils.timeToLong("00:00:00 " + request.getStartDate(), "HH:mm:ss dd/MM/yyyy");
+        long end = TimeUtils.timeToLong("23:59:59 " + request.getEndDate(), "HH:mm:ss dd/MM/yyyy");
+
+        long startCurrentDay = getStartOfDayInMillis();
+        if (start < startCurrentDay)
+            throw new AppException("Thời gian bắt đầu không hợp lệ");
+
+        if (start > plus7days(startCurrentDay))
+            throw new AppException("Chỉ được đặt trước 7 ngày");
+
+        int days = calculateDays(start, end);
+        if (days > 30)
+            throw new AppException("Hiệu lực vé tối đa là 30 ngày");
+
+        int balance = vaultClient.getBalance().getResult().getBalence();
+
+        int price = days * category.getPrice();
+        if (balance < price)
+            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
+
+        List<EmptyPositionResponse> tickets = categoryService.getEmptyPosition(request.getStartDate(), request.getCategory());
+
+        tickets.forEach(item -> {
+            if (item.getQuantity() <= 0) {
+                throw new AppException("Ngày " + item.getDate() + " đã hết vị trí trống");
+            }
+        });
+
+        Ticket ticket = Ticket.builder()
+                .id(UUID.randomUUID().toString())
+                .uid(uid)
+                .price(price)
+                .category(category)
+                .buyAt(Instant.now().toEpochMilli())
+                .startAt(start)
+                .expireAt(end)
+                .build();
+
+        vaultClient.addFluctuation(
+                AddFluctuationRequest.builder()
+                        .amount(price)
+                        .objectId(ticket.getId())
+                        .build()
+                , EReason.BUY_TICKET.name());
+
+        ticket = ticketRepository.save(ticket);
+        return ticketMapper.toTicketResponse(ticket);
+    }
+
+    long plus7days(long start) {
+        LocalDate startDate = Instant.ofEpochMilli(start)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        LocalDate dateAfter30Days = startDate.plusDays(7);
+
+        LocalDateTime endOfDay = dateAfter30Days.atTime(LocalTime.MAX);
+
+        return endOfDay.atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+    }
+
+    long getStartOfDayInMillis() {
+        // Lấy ngày hiện tại
+        LocalDate currentDate = LocalDate.now();
+
+        // Chuyển đổi ngày hiện tại thành LocalDateTime lúc 00:00:00
+        LocalDateTime startOfDay = currentDate.atStartOfDay();
+
+        // Chuyển LocalDateTime thành Instant, sau đó chuyển sang mili giây
+        return startOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    public static int calculateDays(long start, long end) {
+        // Một ngày có 86400000 mili giây (24 giờ * 60 phút * 60 giây * 1000 mili giây)
+        long oneDayInMillis = TimeUnit.DAYS.toMillis(1);
+
+        // Nếu start == end, rõ ràng chỉ có 1 ngày
+        if (start == end) {
+            return 1;
+        }
+
+        // Nếu start < end, tính số ngày giữa start và end
+        long diffInMillis = end - start;
+
+        // Chia chênh lệch thời gian cho số mili giây trong 1 ngày, rồi làm tròn lên
+        long diffInDays = diffInMillis / oneDayInMillis;
+
+        // Nếu phần còn lại (mod) > 0, tức là thời gian nằm qua một ngày khác, cần cộng thêm 1 ngày
+        if (diffInMillis % oneDayInMillis > 0) {
+            diffInDays++;
+        }
+
+        return (int) diffInDays;
     }
 
     long getExpireTicket(String unit) {

@@ -236,7 +236,7 @@ public class CategoryService {
         long startAt = TimeUtils.timeToLong("00:00:00 " + startDate, "HH:mm:ss dd/MM/yyyy");
         long endAt = plus30days(startAt);
 
-        List<Ticket> tickets = ticketRepository.findAllByStartAtBetweenOrExpireAtBetweenAndCategory_VehicleOrderByStartAtAsc(
+        List<Ticket> tickets = ticketRepository.findTickets(
                 startAt, endAt, startAt, endAt, categoryInDB.getVehicle());
 
         Setting setting = getNewRecord();

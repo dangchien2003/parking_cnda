@@ -24,7 +24,7 @@ public class TicketController {
 
     TicketService ticketService;
 
-    @PostMapping
+    @PostMapping("/buy")
     ApiResponse<TicketResponse> buy(@Valid @RequestBody BuyTicketRequest request) {
         return ApiResponse.<TicketResponse>builder()
                 .result(ticketService.buy(request))
