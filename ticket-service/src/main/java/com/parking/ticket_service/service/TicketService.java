@@ -63,6 +63,7 @@ public class TicketService {
     ObjectMapper objectMapper;
     CloudinaryUploader cloudinaryUploader;
     CategoryService categoryService;
+    QRService qrService;
 
     static final long EXTENDED_UNIT_PRICE_ONE_MINUTE = 1_000;
     static final String KEY_CANCEL_QR = "CANCELED_";
@@ -488,6 +489,8 @@ public class TicketService {
                 , EReason.BUY_TICKET.name());
 
         ticket = ticketRepository.save(ticket);
+
+        qrService.add(ticket.getId());
         return ticketMapper.toTicketResponse(ticket);
     }
 

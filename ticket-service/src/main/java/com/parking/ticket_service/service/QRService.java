@@ -64,15 +64,9 @@ public class QRService {
         }
 
         long startDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        long endOfDay = LocalDate.now()                   // Lấy ngày hiện tại
-                .atTime(23, 59, 59, 999999999) // Đặt thời gian là 23:59:59.999999999
-                .atZone(ZoneId.systemDefault()) // Chuyển đổi sang múi giờ hệ thống
-                .toInstant()                   // Chuyển thành Instant
-                .toEpochMilli();
+       
 
-        if (ticket.getStartAt() > endOfDay) {
-            throw new AppException("Vé chưa thể sử dụng");
-        } else if (ticket.getExpireAt() < startDay) {
+        if (ticket.getExpireAt() < startDay) {
             throw new AppException("Vé đã hết hạn");
         }
     }
