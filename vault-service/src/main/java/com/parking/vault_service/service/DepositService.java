@@ -269,7 +269,6 @@ public class DepositService {
 
     public List<HistoryDeposit> history(int page, String status, String date) {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
-//        String uid = "7c11b1ab-0c8a-40c3-93ea-65b8202fce29";
         Pageable pageable = PageUtil.getPageable(page, 20, PageUtil.getSort("DESC", "createAt"));
         List<Deposit> deposits;
         if (status == null && date == null) {
