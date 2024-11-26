@@ -2,6 +2,8 @@ package com.parking.ticket_service.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -21,7 +23,9 @@ public class Ticket {
 
     int price;
 
-    String category;
+    @ManyToOne
+    @NotNull
+    Category category;
 
     int turnTotal;
 
@@ -29,11 +33,9 @@ public class Ticket {
 
     long buyAt;
 
-    long start;
+    long startAt;
 
     long expireAt;
-
-    long cancleAt;
 
     long usedAt;
 }

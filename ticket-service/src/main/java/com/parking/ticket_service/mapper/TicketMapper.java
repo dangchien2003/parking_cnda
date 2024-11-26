@@ -11,7 +11,7 @@ import org.mapstruct.Mapping;
 public interface TicketMapper {
     @Mapping(source = "id", target = "ticketId")
     @Mapping(source = "category.name", target = "name")
-    @Mapping(source = "category.category.vehicle", target = "vehicle")
+    @Mapping(source = "category.vehicle", target = "vehicle")
     TicketResponse toTicketResponse(Ticket ticket);
 
     InfoTicketResponse toInfoTicketResponse(Ticket ticket);

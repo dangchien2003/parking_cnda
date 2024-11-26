@@ -2,14 +2,26 @@ package com.parking.ticket_service.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parking.ticket_service.dto.request.*;
+import com.parking.ticket_service.dto.request.AddFluctuationRequest;
+import com.parking.ticket_service.dto.request.BuyTicketRequest;
+import com.parking.ticket_service.dto.request.CancelQrRequest;
+import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
 import com.parking.ticket_service.dto.response.*;
-import com.parking.ticket_service.entity.*;
-import com.parking.ticket_service.enums.*;
+import com.parking.ticket_service.entity.Category;
+import com.parking.ticket_service.entity.Plate;
+import com.parking.ticket_service.entity.PlateId;
+import com.parking.ticket_service.entity.Ticket;
+import com.parking.ticket_service.enums.ECategoryStatus;
+import com.parking.ticket_service.enums.ECategoryUnit;
+import com.parking.ticket_service.enums.ECloudinary;
+import com.parking.ticket_service.enums.EReason;
 import com.parking.ticket_service.exception.AppException;
 import com.parking.ticket_service.exception.ErrorCode;
 import com.parking.ticket_service.mapper.TicketMapper;
-import com.parking.ticket_service.repository.*;
+import com.parking.ticket_service.repository.CategoryRepository;
+import com.parking.ticket_service.repository.PlateRepository;
+import com.parking.ticket_service.repository.RedisRepository;
+import com.parking.ticket_service.repository.TicketRepository;
 import com.parking.ticket_service.repository.httpclient.VaultClient;
 import com.parking.ticket_service.repository.uploader.CloudinaryUploader;
 import com.parking.ticket_service.utils.AESUtils;
@@ -43,12 +55,10 @@ public class TicketService {
 
     TicketRepository ticketRepository;
     CategoryRepository categoryRepository;
-    CategoryHistoryRepository categoryHistoryRepository;
     RedisRepository redisRepository;
     PlateRepository plateRepository;
     PlateCacheService plateCacheService;
     TicketCacheService ticketCacheService;
-    StationCacheService stationCacheService;
     TicketMapper ticketMapper;
     VaultClient vaultClient;
     ObjectMapper objectMapper;
@@ -78,172 +88,172 @@ public class TicketService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
     }
 
-    public void checkoutFirstStep(String stationId, FirstCheckoutRequest request) throws JsonProcessingException {
-        ContentQr contentQr = getContentQr(request.getQr());
-        validateQrId(contentQr.getId());
-
-        Station station = stationCacheService.getStation(stationId);
-        validateStationStatus(station);
-
-        Ticket ticket = getTicket(contentQr.getTicket());
-        validateTicketValidity(ticket);
-
-        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-
-        validateTicketInUse(ticket, plate);
-        validateStationManagingTicket(plate, station);
-
-        ticketCacheService.addTicketChecking(ticket.getId());
-    }
-
-    void validateQrId(String qrid) {
-        if (!Objects.isNull(redisRepository.getValue(KEY_CANCEL_QR + qrid)))
-            throw new AppException(ErrorCode.TICKET_NOTFOUND);
-    }
-
-    void validateTicketInUse(Ticket ticket, Plate plate) {
-        if (ticket.getTurnTotal() <= 0 ||
-                Objects.isNull(plate) ||
-                plate.getCheckoutAt() > 0)
-            throw new AppException(ErrorCode.UNUSED_TICKET);
-    }
-
-    void validateStationManagingTicket(Plate plate, Station station) {
-        if (!plate.getStation().getStationId().equals(station.getStationId()))
-            throw new AppException(ErrorCode.DIFFERENT_STATION);
-    }
-
-    public void checkoutSecondStep(String stationId, SecondCheckoutRequest request) throws JsonProcessingException {
-        ContentQr contentQr = getContentQr(request.getQr());
-        validateTicketChecking(contentQr);
-
-        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
-
-        Station station = getStationInSecondStep(stationId);
-
-        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-
-        validateStationManagingTicket(plate, station);
-        validatePlate(plate, request.getImage());
-
-        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal(), request.getImage(), "checkout");
-
-        plate.setCheckoutAt(Instant.now().toEpochMilli());
-        plate.setImageOut(path);
-        plateRepository.save(plate);
-        plateCacheService.deletePlate(ticket.getId(), ticket.getTurnTotal());
-    }
-
-    void validatePlate(Plate plate, String image) {
-
-        if (Objects.isNull(plate) ||
-                plate.getCheckoutAt() > 0)
-            throw new AppException(ErrorCode.CHECKIN_NOT_YET);
-
-        String scanPlate = fakeScanPlate(image);
-
-        if (!plate.getContentPlate().equals(scanPlate))
-            throw new AppException(ErrorCode.INCORRECT_PLATE);
-    }
-
-    void validateTicketChecking(ContentQr contentQr) {
-        if (!ticketCacheService.isTicketChecking(contentQr.getTicket()))
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-    }
-
-    Station getStationInSecondStep(String stationId) {
-        try {
-            return stationCacheService.getStation(stationId);
-        } catch (AppException e) {
-            throw new AppException(ErrorCode.STATION_NOT_EXIST);
-        }
-    }
-
-
-    public void checkinFirstStep(String stationId, FirstCheckinRequest request) throws JsonProcessingException {
-        ContentQr contentQr = getContentQr(request.getQr());
-        validateQrId(contentQr.getId());
-
-        Station station = stationCacheService.getStation(stationId);
-        validateStationStatus(station);
-
-        Ticket ticket = getTicket(contentQr.getTicket());
-
-        validateTicketValidity(ticket);
-
-        validateTicketBeforeCheckin(ticket);
-
-//        validateStationAndCategory(ticket, station);
-
-        ticketCacheService.addTicketChecking(ticket.getId());
-    }
-
-    void validateTicketValidity(Ticket ticket) {
-        if (ticket.getCancleAt() > 0 || ticket.getExpireAt() < Instant.now().toEpochMilli()) {
-            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
-        }
-    }
-
-    void validateStationStatus(Station station) {
-        if (!station.getStatus().equals(EStationStatus.ACTIVE.name())) {
-            throw new AppException(ErrorCode.STATION_NOT_SUPPORT);
-        }
-    }
-
-    void validateTicketBeforeCheckin(Ticket ticket) {
-        if (ticket.getTurnTotal() > 0) {
-            Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-            if (!Objects.isNull(plate) && plate.getCheckoutAt() == 0 && plate.getCheckinAt() > 0) {
-                throw new AppException(ErrorCode.TICKET_IN_USE);
-            }
-        }
-    }
-
-//    void validateStationAndCategory(Ticket ticket, Station station) {
-//        if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES.name()) &&
-//                ticket.getTurnTotal() + 1 > ticket.getCategory().getQuantity()) {
+//    public void checkoutFirstStep(String stationId, FirstCheckoutRequest request) throws JsonProcessingException {
+//        ContentQr contentQr = getContentQr(request.getQr());
+//        validateQrId(contentQr.getId());
+//
+//        Station station = stationCacheService.getStation(stationId);
+//        validateStationStatus(station);
+//
+//        Ticket ticket = getTicket(contentQr.getTicket());
+//        validateTicketValidity(ticket);
+//
+//        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
+//
+//        validateTicketInUse(ticket, plate);
+//        validateStationManagingTicket(plate, station);
+//
+//        ticketCacheService.addTicketChecking(ticket.getId());
+//    }
+//
+//    void validateQrId(String qrid) {
+//        if (!Objects.isNull(redisRepository.getValue(KEY_CANCEL_QR + qrid)))
+//            throw new AppException(ErrorCode.TICKET_NOTFOUND);
+//    }
+//
+//    void validateTicketInUse(Ticket ticket, Plate plate) {
+//        if (ticket.getTurnTotal() <= 0 ||
+//                Objects.isNull(plate) ||
+//                plate.getCheckoutAt() > 0)
+//            throw new AppException(ErrorCode.UNUSED_TICKET);
+//    }
+//
+//    void validateStationManagingTicket(Plate plate, Station station) {
+//        if (!plate.getStation().getStationId().equals(station.getStationId()))
+//            throw new AppException(ErrorCode.DIFFERENT_STATION);
+//    }
+//
+//    public void checkoutSecondStep(String stationId, SecondCheckoutRequest request) throws JsonProcessingException {
+//        ContentQr contentQr = getContentQr(request.getQr());
+//        validateTicketChecking(contentQr);
+//
+//        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
+//
+//        Station station = getStationInSecondStep(stationId);
+//
+//        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
+//
+//        validateStationManagingTicket(plate, station);
+//        validatePlate(plate, request.getImage());
+//
+//        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal(), request.getImage(), "checkout");
+//
+//        plate.setCheckoutAt(Instant.now().toEpochMilli());
+//        plate.setImageOut(path);
+//        plateRepository.save(plate);
+//        plateCacheService.deletePlate(ticket.getId(), ticket.getTurnTotal());
+//    }
+//
+//    void validatePlate(Plate plate, String image) {
+//
+//        if (Objects.isNull(plate) ||
+//                plate.getCheckoutAt() > 0)
+//            throw new AppException(ErrorCode.CHECKIN_NOT_YET);
+//
+//        String scanPlate = fakeScanPlate(image);
+//
+//        if (!plate.getContentPlate().equals(scanPlate))
+//            throw new AppException(ErrorCode.INCORRECT_PLATE);
+//    }
+//
+//    void validateTicketChecking(ContentQr contentQr) {
+//        if (!ticketCacheService.isTicketChecking(contentQr.getTicket()))
+//            throw new AppException(ErrorCode.UNAUTHORIZED);
+//    }
+//
+//    Station getStationInSecondStep(String stationId) {
+//        try {
+//            return stationCacheService.getStation(stationId);
+//        } catch (AppException e) {
+//            throw new AppException(ErrorCode.STATION_NOT_EXIST);
+//        }
+//    }
+//
+//
+//    public void checkinFirstStep(String stationId, FirstCheckinRequest request) throws JsonProcessingException {
+//        ContentQr contentQr = getContentQr(request.getQr());
+//        validateQrId(contentQr.getId());
+//
+//        Station station = stationCacheService.getStation(stationId);
+//        validateStationStatus(station);
+//
+//        Ticket ticket = getTicket(contentQr.getTicket());
+//
+//        validateTicketValidity(ticket);
+//
+//        validateTicketBeforeCheckin(ticket);
+//
+////        validateStationAndCategory(ticket, station);
+//
+//        ticketCacheService.addTicketChecking(ticket.getId());
+//    }
+//
+//    void validateTicketValidity(Ticket ticket) {
+//        if (ticket.getCancleAt() > 0 || ticket.getExpireAt() < Instant.now().toEpochMilli()) {
 //            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
 //        }
-//
-//        Category category = categoryRepository.findById(ticket.getCategory().getCategory().getId())
-//                .orElseThrow(() -> new AppException(ErrorCode.ERROR_TICKET));
-//
-//        if (category.getStations().stream()
-//                .noneMatch(element -> element.getStationId().equals(station.getStationId())))
-//            throw new AppException(ErrorCode.STATION_NOT_SUPPORT_TICKET);
 //    }
-
-    public void checkinSecondStep(String stationId, SecondCheckinRequest request) throws JsonProcessingException {
-        ContentQr contentQr = getContentQr(request.getQr());
-        validateTicketChecking(contentQr);
-
-        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
-        Station station = getStationInSecondStep(stationId);
-
-        String scanPlate = fakeScanPlate(request.getImage());
-
-        validatePlate(ticket, scanPlate);
-
-        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal() + 1, request.getImage(), "checkin");
-
-        PlateId plateId = new PlateId(ticket.getId(), ticket.getTurnTotal() + 1);
-        Plate newPlate = Plate.builder()
-                .id(plateId)
-                .urlPrefixCode(UrlPrefixCodeImage.V1.getCode())
-                .imageIn(path)
-                .checkinAt(Instant.now().toEpochMilli())
-                .contentPlate(scanPlate)
-                .station(station)
-                .build();
-
-        ticket.setTurnTotal(ticket.getTurnTotal() + 1);
-        if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES.name()))
-            ticket.setExpireAt(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli());
-
-        plateRepository.save(newPlate);
-        ticketRepository.save(ticket);
-        ticketCacheService.deleteTicket(ticket.getId());
-    }
+//
+//    void validateStationStatus(Station station) {
+//        if (!station.getStatus().equals(EStationStatus.ACTIVE.name())) {
+//            throw new AppException(ErrorCode.STATION_NOT_SUPPORT);
+//        }
+//    }
+//
+//    void validateTicketBeforeCheckin(Ticket ticket) {
+//        if (ticket.getTurnTotal() > 0) {
+//            Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
+//            if (!Objects.isNull(plate) && plate.getCheckoutAt() == 0 && plate.getCheckinAt() > 0) {
+//                throw new AppException(ErrorCode.TICKET_IN_USE);
+//            }
+//        }
+//    }
+//
+////    void validateStationAndCategory(Ticket ticket, Station station) {
+////        if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES.name()) &&
+////                ticket.getTurnTotal() + 1 > ticket.getCategory().getQuantity()) {
+////            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
+////        }
+////
+////        Category category = categoryRepository.findById(ticket.getCategory().getCategory().getId())
+////                .orElseThrow(() -> new AppException(ErrorCode.ERROR_TICKET));
+////
+////        if (category.getStations().stream()
+////                .noneMatch(element -> element.getStationId().equals(station.getStationId())))
+////            throw new AppException(ErrorCode.STATION_NOT_SUPPORT_TICKET);
+////    }
+//
+//    public void checkinSecondStep(String stationId, SecondCheckinRequest request) throws JsonProcessingException {
+//        ContentQr contentQr = getContentQr(request.getQr());
+//        validateTicketChecking(contentQr);
+//
+//        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
+//        Station station = getStationInSecondStep(stationId);
+//
+//        String scanPlate = fakeScanPlate(request.getImage());
+//
+//        validatePlate(ticket, scanPlate);
+//
+//        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal() + 1, request.getImage(), "checkin");
+//
+//        PlateId plateId = new PlateId(ticket.getId(), ticket.getTurnTotal() + 1);
+//        Plate newPlate = Plate.builder()
+//                .id(plateId)
+//                .urlPrefixCode(UrlPrefixCodeImage.V1.getCode())
+//                .imageIn(path)
+//                .checkinAt(Instant.now().toEpochMilli())
+//                .contentPlate(scanPlate)
+//                .station(station)
+//                .build();
+//
+//        ticket.setTurnTotal(ticket.getTurnTotal() + 1);
+//        if (ticket.getCategoryId().getUnit().equals(ECategoryUnit.TIMES.name()))
+//            ticket.setExpireAt(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli());
+//
+//        plateRepository.save(newPlate);
+//        ticketRepository.save(ticket);
+//        ticketCacheService.deleteTicket(ticket.getId());
+//    }
 
     String fakeScanPlate(String image) {
         return "123";
@@ -273,12 +283,12 @@ public class TicketService {
 
         Ticket ticket = getTicket(ticketId);
 
-        if (ticket.getCancleAt() > 0 ||
+        if (
                 ticket.getExpireAt() < Instant.now().toEpochMilli())
             throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
 
         Plate plate = null;
-        if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES.name()) &&
+        if (ticket.getCategory().getUnit().equals(ECategoryUnit.DAY.name()) &&
                 ticket.getTurnTotal() >= ticket.getCategory().getQuantity()) {
             plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
 
@@ -320,9 +330,9 @@ public class TicketService {
         if (Objects.isNull(plate) || plate.getCheckoutAt() > 0)
             throw new AppException(ErrorCode.UNUSED_TICKET);
 
-        if (ticket.getCancleAt() > 0 ||
+        if (
                 ticket.getExpireAt() > Instant.now().toEpochMilli() ||
-                ticket.getTurnTotal() == 0)
+                        ticket.getTurnTotal() == 0)
             throw new AppException(ErrorCode.EXTEND_FAIL);
 
 
@@ -400,8 +410,7 @@ public class TicketService {
 
         Ticket ticket = getTicket(request.getTicketId());
 
-        if ((ticket.getTurnTotal() > 0 && !Objects.isNull(ticket.getContentPlate())) ||
-                ticket.getCancleAt() > 0
+        if ((ticket.getTurnTotal() > 0 && !Objects.isNull(ticket.getContentPlate()))
         )
             throw new AppException(ErrorCode.CANNOT_UPDATE_PLATE);
 
@@ -421,44 +430,34 @@ public class TicketService {
 
         if (Objects.isNull(category) || !category.getStatus().equals(ECategoryStatus.ACTIVE.name()))
             throw new AppException(ErrorCode.INVALID_CATEGORY);
-        long expire;
-        CategoryHistory history;
-        try {
-            history = categoryHistoryRepository.findAllByCategoryOrderByCreateAtDesc(category)
-                    .getFirst();
+        return null;
 
-            if (!history.getStatus().equals(ECategoryStatus.ACTIVE.name()))
-                throw new AppException(ErrorCode.DATA_NOT_FOUND);
-
-            expire = getExpireTicket(history.getUnit());
-        } catch (Exception e) {
-            log.error("Buy fail: ", e);
-            throw new AppException(ErrorCode.CANNOT_BUY_TICKET);
-        }
-
-        ApiResponse<BalenceResponse> balanceResponse = vaultClient.getBalance();
-
-        if (balanceResponse.getResult().getBalence() < history.getPrice())
-            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
-
-        String ticketId = UUID.randomUUID().toString();
-
-        AddFluctuationRequest addFluctuationRequest = AddFluctuationRequest.builder()
-                .objectId(ticketId)
-                .amount(history.getPrice())
-                .build();
-        vaultClient.addFluctuation(addFluctuationRequest, EReason.BUY_TICKET.name());
-
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .uid(uid)
-                .category(history)
-                .buyAt(Instant.now().toEpochMilli())
-                .expireAt(expire)
-                .build();
-
-        ticket = ticketRepository.save(ticket);
-        return ticketMapper.toTicketResponse(ticket);
+//        long expire;
+//
+//
+//        ApiResponse<BalenceResponse> balanceResponse = vaultClient.getBalance();
+//
+//        if (balanceResponse.getResult().getBalence() < history.getPrice())
+//            throw new AppException(ErrorCode.INSUFFICIENT_BALANCE);
+//
+//        String ticketId = UUID.randomUUID().toString();
+//
+////        AddFluctuationRequest addFluctuationRequest = AddFluctuationRequest.builder()
+////                .objectId(ticketId)
+////                .amount(history.getPrice())
+////                .build();
+////        vaultClient.addFluctuation(addFluctuationRequest, EReason.BUY_TICKET.name());
+//
+//        Ticket ticket = Ticket.builder()
+//                .id(ticketId)
+//                .uid(uid)
+//                .category(category)
+//                .buyAt(Instant.now().toEpochMilli())
+//                .expireAt(expire)
+//                .build();
+//
+//        ticket = ticketRepository.save(ticket);
+//        return ticketMapper.toTicketResponse(ticket);
     }
 
     long getExpireTicket(String unit) {
@@ -488,7 +487,7 @@ public class TicketService {
 
         Pageable pageable = PageUtils.getPageable(page, pageSize, PageUtils.getSort("ESC", "buyAt"));
         Page<Ticket> pageData = ticketRepository.findByUid(uid, pageable);
-        
+
         return pageData.getContent().stream().map(ticket -> {
             TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
             if (ticket.getExpireAt() < Instant.now().toEpochMilli()) {

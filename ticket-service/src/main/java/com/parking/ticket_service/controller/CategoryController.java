@@ -6,6 +6,7 @@ import com.parking.ticket_service.dto.request.CategoryUpdateStationRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStatusRequest;
 import com.parking.ticket_service.dto.response.ApiResponse;
 import com.parking.ticket_service.dto.response.CategoryResponse;
+import com.parking.ticket_service.dto.response.EmptyPositionResponse;
 import com.parking.ticket_service.dto.response.ManagerDetailCategoryResponse;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.service.CategoryService;
@@ -45,9 +46,6 @@ public class CategoryController {
             @RequestParam(name = "status", required = false, defaultValue = "")
             String status,
 
-            @RequestParam(name = "vehicle", required = false, defaultValue = "")
-            String vehicle,
-
             @RequestParam(name = "page", required = false, defaultValue = "1")
             @Min(value = 1)
             int page,
@@ -59,7 +57,7 @@ public class CategoryController {
             String field
     ) {
         return ApiResponse.<List<ManagerDetailCategoryResponse>>builder()
-                .result(categoryService.findAll(status, vehicle, page, sort, field))
+                .result(categoryService.findAll(status, page, sort, field))
                 .build();
     }
 
@@ -78,17 +76,16 @@ public class CategoryController {
     }
 
     @GetMapping("/info/{id}")
-    ApiResponse<CategoryResponse> getCategory(@PathVariable(name = "id") String id) {
+    ApiResponse<CategoryResponse> endpoint(@PathVariable(name = "id") String id) {
         return ApiResponse.<CategoryResponse>builder()
                 .result(categoryService.getInfo(id))
                 .build();
     }
 
-    @GetMapping("/find")
-    ApiResponse<List<CategoryResponse>> getCategory(@RequestParam(name = "vehicle") String vehicle,
-                                                    @RequestParam(name = "page", defaultValue = "1") int page) {
+    @GetMapping("/find/all")
+    ApiResponse<List<CategoryResponse>> getCategory(@RequestParam(name = "page", defaultValue = "1") int page) {
         return ApiResponse.<List<CategoryResponse>>builder()
-                .result(categoryService.find(vehicle, page))
+                .result(categoryService.find(page))
                 .build();
     }
 
@@ -96,6 +93,14 @@ public class CategoryController {
     ApiResponse<Category> managerGetCategory(@PathVariable(name = "id") String id) {
         return ApiResponse.<Category>builder()
                 .result(categoryService.managerGetCategory(id))
+                .build();
+    }
+
+    @GetMapping("empty-position")
+    ApiResponse<List<EmptyPositionResponse>> getPositionEmpty(@RequestParam(name = "start") String startDate,
+                                                              @RequestParam(name = "ticket") String category) {
+        return ApiResponse.<List<EmptyPositionResponse>>builder()
+                .result(categoryService.getEmptyPosition(startDate, category))
                 .build();
     }
 }

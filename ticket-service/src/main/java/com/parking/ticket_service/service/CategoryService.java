@@ -5,23 +5,26 @@ import com.parking.ticket_service.dto.request.CategoryUpdateRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStationRequest;
 import com.parking.ticket_service.dto.request.CategoryUpdateStatusRequest;
 import com.parking.ticket_service.dto.response.CategoryResponse;
+import com.parking.ticket_service.dto.response.EmptyPositionResponse;
 import com.parking.ticket_service.dto.response.ManagerDetailCategoryResponse;
 import com.parking.ticket_service.entity.Category;
-import com.parking.ticket_service.entity.CategoryHistory;
+import com.parking.ticket_service.entity.Setting;
 import com.parking.ticket_service.entity.Station;
+import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.enums.AmountPage;
 import com.parking.ticket_service.enums.ECategoryStatus;
 import com.parking.ticket_service.enums.ECategoryUnit;
 import com.parking.ticket_service.exception.AppException;
 import com.parking.ticket_service.exception.ErrorCode;
-import com.parking.ticket_service.mapper.CategoryHistoryMapper;
 import com.parking.ticket_service.mapper.CategoryMapper;
-import com.parking.ticket_service.repository.CategoryHistoryRepository;
 import com.parking.ticket_service.repository.CategoryRepository;
+import com.parking.ticket_service.repository.SettingRepository;
 import com.parking.ticket_service.repository.StationRepository;
+import com.parking.ticket_service.repository.TicketRepository;
 import com.parking.ticket_service.utils.ENumUtils;
 import com.parking.ticket_service.utils.FieldCheckers;
 import com.parking.ticket_service.utils.PageUtils;
+import com.parking.ticket_service.utils.TimeUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,21 +35,20 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.util.EnumUtils;
 
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.*;
+import java.util.*;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 @Service
 public class CategoryService {
-
     CategoryRepository categoryRepository;
-    CategoryHistoryRepository categoryHistoryRepository;
+    TicketRepository ticketRepository;
     StationRepository stationRepository;
     CategoryMapper categoryMapper;
-    CategoryHistoryMapper categoryHistoryMapper;
+    SettingRepository settingRepository;
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public CategoryResponse create(CategoryCreatitonRequest request) {
@@ -74,13 +76,11 @@ public class CategoryService {
         category.setModifiedAt(Instant.now().toEpochMilli());
         category = categoryRepository.save(category);
 
-        saveHistory(category);
-
         return categoryMapper.toCategoryResponse(category);
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
-    public List<ManagerDetailCategoryResponse> findAll(String status, String vehicle, int page, String sort, String field) {
+    public List<ManagerDetailCategoryResponse> findAll(String status, int page, String sort, String field) {
 
         if (!FieldCheckers.hasField(Category.class, field))
             field = "createAt";
@@ -92,17 +92,10 @@ public class CategoryService {
             throw new AppException(ErrorCode.INVALID_DATA);
         }
 
-        if (vehicle.isEmpty() || vehicle.equalsIgnoreCase("MOTORBIKE"))
-            vehicle = "MOTORBIKE";
-        else if (vehicle.equalsIgnoreCase("CAR"))
-            vehicle = "CAR";
-        else
-            throw new AppException(ErrorCode.INVALID_DATA);
-
         Pageable pageable = PageUtils
                 .getPageable(page, AmountPage.FIND_CATEGORY.getAmount(), PageUtils.getSort(sort, field));
 
-        Page<Category> pageData = categoryRepository.findAllByStatusAndVehicle(eStatus.name(), vehicle, pageable);
+        Page<Category> pageData = categoryRepository.findAllByStatus(eStatus.name(), pageable);
 
         return pageData.getContent().stream().map(item -> {
             ManagerDetailCategoryResponse record = new ManagerDetailCategoryResponse();
@@ -192,8 +185,6 @@ public class CategoryService {
         category.setStatus(categoryStatus);
         category.setModifiedAt(Instant.now().toEpochMilli());
         category = categoryRepository.save(category);
-
-        saveHistory(category);
     }
 
     public CategoryResponse getInfo(String id) {
@@ -209,42 +200,121 @@ public class CategoryService {
         return category;
     }
 
-    public List<CategoryResponse> find(String vehicle, int page) {
-        if (!vehicle.equalsIgnoreCase("motorbike")
-                && !vehicle.equalsIgnoreCase("car")) {
-            throw new AppException(ErrorCode.INVALID_DATA);
-        }
+    public List<CategoryResponse> find(int page) {
 
-        Page<Category> data = categoryRepository.findAllByStatusAndVehicle(ECategoryStatus.ACTIVE.name(), vehicle, PageUtils.getPageable(page, 10, PageUtils.getSort("ASC", "unit")));
+        Page<Category> data = categoryRepository.findAllByStatus(ECategoryStatus.ACTIVE.name(), PageUtils.getPageable(page, 10, PageUtils.getSort("ASC", "vehicle")));
         return data.getContent().stream().map(this::convert).toList();
     }
 
     CategoryResponse convert(Category category) {
-        String duration;
         String usage = "Vô hạn";
-        String unit = category.getUnit().toUpperCase();
-        if (unit.equals(ECategoryUnit.TIMES.name())) {
-            duration = "24 giờ từ khi sử dụng";
-            usage = category.getQuantity() + " lần";
-        } else if (unit.equals(ECategoryUnit.DAY.name())) {
-            duration = "24 giờ từ lúc mua";
-        } else if (unit.equals(ECategoryUnit.MONTH.name())) {
-            duration = "1 tháng từ lúc mua";
-        } else if (unit.equals(ECategoryUnit.WEEK.name())) {
-            duration = "1 tuần từ lúc mua";
-        } else {
-            duration = "";
-        }
-
         CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
-        categoryResponse.setDuration(duration);
+        categoryResponse.setDuration("23:59");
         categoryResponse.setUsage(usage);
+        categoryResponse.setVehicle(category.getVehicle());
         return categoryResponse;
     }
 
-    void saveHistory(Category category) {
-        CategoryHistory categoryHistory = categoryHistoryMapper.toCategoryHistory(category);
-        categoryHistory.setCreateAt(Instant.now().toEpochMilli());
-        categoryHistoryRepository.save(categoryHistory);
+    long plus30days(long start) {
+        LocalDate startDate = Instant.ofEpochMilli(start)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        LocalDate dateAfter30Days = startDate.plusDays(30);
+
+        LocalDateTime endOfDay = dateAfter30Days.atTime(LocalTime.MAX);
+
+        return endOfDay.atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+    }
+
+    public List<EmptyPositionResponse> getEmptyPosition(String startDate, String category) {
+        Category categoryInDB = categoryRepository.findById(category)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOTFOUND));
+
+        long startAt = TimeUtils.timeToLong("00:00:00 " + startDate, "HH:mm:ss dd/MM/yyyy");
+        long endAt = plus30days(startAt);
+
+        List<Ticket> tickets = ticketRepository.findAllByStartAtBetweenOrExpireAtBetweenAndCategory_VehicleOrderByStartAtAsc(
+                startAt, endAt, startAt, endAt, categoryInDB.getVehicle());
+
+        Setting setting = getNewRecord();
+        int max = 0;
+        if (categoryInDB.getVehicle().toUpperCase().equals("CAR")) {
+            max = setting.getMaxPositionCar() - setting.getSpareCar();
+        } else {
+            max = setting.getMaxPositionMotorbike() - setting.getSpareMotorbike();
+        }
+
+        return calcEmptyPosition(tickets, startAt, endAt, max);
+    }
+
+    public List<EmptyPositionResponse> calcEmptyPosition(List<Ticket> tickets, long startAt, long endAt, int max) {
+
+        Map<String, Integer> dateQuantityMap = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        for (Ticket ticket : tickets) {
+            long ticketStartAt = ticket.getStartAt();
+            long ticketExpireAt = ticket.getExpireAt();
+
+            // Convert startAt and expireAt to Calendar for easier iteration
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(ticketStartAt);
+            while (calendar.getTimeInMillis() <= ticketExpireAt) {
+                String date = dateFormat.format(calendar.getTime());
+
+                dateQuantityMap.put(date, dateQuantityMap.getOrDefault(date, 0) + 1);
+
+                calendar.add(Calendar.DAY_OF_YEAR, 1);
+            }
+        }
+
+        List<EmptyPositionResponse> result = new ArrayList<>();
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startAt);
+
+        while (calendar.getTimeInMillis() <= endAt) {
+            String date = dateFormat.format(calendar.getTime());
+
+            EmptyPositionResponse response = new EmptyPositionResponse();
+            response.setDate(date);
+
+            int quantity = dateQuantityMap.getOrDefault(date, 0);
+            int remaining = max - quantity;
+            response.setQuantity(remaining);
+
+            result.add(response);
+
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        Collections.sort(result, new Comparator<EmptyPositionResponse>() {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+            @Override
+            public int compare(EmptyPositionResponse o1, EmptyPositionResponse o2) {
+                try {
+                    Date date1 = sdf.parse(o1.getDate());
+                    Date date2 = sdf.parse(o2.getDate());
+                    return date1.compareTo(date2);
+                } catch (Exception e) {
+                    return 0;
+                }
+            }
+        });
+
+        return result;
+    }
+
+    Setting getNewRecord() {
+        List<Setting> settings = settingRepository.findAllByOrderByIdDesc();
+        if (settings.size() == 0) {
+            return new Setting();
+        }
+
+        return settings.getFirst();
     }
 }

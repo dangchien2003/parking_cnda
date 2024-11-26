@@ -11,7 +11,12 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BuyTicketRequest {
-
     @NotBlank(message = "FIELD_INFORMATION_MISSING")
     String category;
+
+    @NotBlank(message = "FIELD_INFORMATION_MISSING")
+    String startDate;
+
+    @NotBlank(message = "FIELD_INFORMATION_MISSING")
+    String endDate;
 }

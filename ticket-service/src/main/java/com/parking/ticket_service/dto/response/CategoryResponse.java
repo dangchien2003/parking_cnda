@@ -24,4 +24,6 @@ public class CategoryResponse {
     String duration;
 
     String usage;
+
+    String vehicle;
 }

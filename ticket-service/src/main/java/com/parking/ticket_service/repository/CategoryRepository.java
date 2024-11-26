@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, String> {
 
-    Page<Category> findAllByStatusAndVehicle(String status, String vehicle, Pageable pageable);
+    Page<Category> findAllByStatus(String status, Pageable pageable);
 
     Page<Category> findAllByVehicle(String vehicle, Pageable pageable);
 

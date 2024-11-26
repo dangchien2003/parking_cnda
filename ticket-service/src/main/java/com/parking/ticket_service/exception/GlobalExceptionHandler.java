@@ -51,6 +51,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse<Object>> handlingAppException(AppException e) {
+        if (e.getMessage() != null) {
+            return ResponseEntity
+                    .status(400)
+                    .body(ApiResponse.builder()
+                            .code(ErrorCode.INVALID_DATA.getCode())
+                            .message(e.getMessage())
+                            .build());
+        }
+
         ErrorCode errorCode = e.getErrorCode();
         return setResponse(errorCode);
     }
@@ -106,7 +115,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiResponse<Object>> handlingMethodArgumentNotValidException(MethodArgumentNotValidException e) {
 
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
-        String message = errorCode.getMessage();
+        String message;
 
         String enumKey = e.getFieldError().getDefaultMessage();
 
@@ -131,7 +140,7 @@ public class GlobalExceptionHandler {
                         : mapAttribute(errorCode.getMessage(), attributes);
             }
         } catch (Exception exception) {
-            log.warn("Key not exist: {}", enumKey);
+            message = enumKey;
         }
 
         return ResponseEntity

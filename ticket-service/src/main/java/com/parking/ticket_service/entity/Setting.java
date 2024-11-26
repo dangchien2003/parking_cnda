@@ -1,6 +1,9 @@
 package com.parking.ticket_service.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,27 +14,17 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "category_history")
-public class CategoryHistory {
+@Entity(name = "setting")
+public class Setting {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-
-    @ManyToOne
-    Category category;
-
     @NotNull
-    String name;
-
-    int price;
-
-    int quantity;
-
+    int maxPositionCar;
     @NotNull
-    String unit;
-
+    int spareCar;
     @NotNull
-    String status;
-
-    long createAt;
+    int maxPositionMotorbike;
+    @NotNull
+    int spareMotorbike;
 }
