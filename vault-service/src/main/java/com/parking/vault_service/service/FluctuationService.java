@@ -56,7 +56,7 @@ public class FluctuationService {
         ETransaction eTransaction = REASONS_CREDIT.contains(eReason)
                 ? ETransaction.CREDIT : ETransaction.DEBIT;
 
-        addFluctuation(request.getAmount(), eTransaction, EReason.CANCEL_TICKET, description);
+        addFluctuation(request.getAmount(), eTransaction, eReason, description);
     }
 
     Fluctuation addFluctuation(int amount, @NotNull ETransaction transaction, EReason reason, String description) {
