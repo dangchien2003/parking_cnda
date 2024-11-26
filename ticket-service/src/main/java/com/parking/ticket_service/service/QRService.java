@@ -17,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -61,10 +63,16 @@ public class QRService {
             throw new AppException(ErrorCode.TICKET_NOTFOUND);
         }
 
-        long now = Instant.now().toEpochMilli();
-        if (ticket.getStartAt() < now) {
+        long startDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long endOfDay = LocalDate.now()                   // Lấy ngày hiện tại
+                .atTime(23, 59, 59, 999999999) // Đặt thời gian là 23:59:59.999999999
+                .atZone(ZoneId.systemDefault()) // Chuyển đổi sang múi giờ hệ thống
+                .toInstant()                   // Chuyển thành Instant
+                .toEpochMilli();
+
+        if (ticket.getStartAt() > endOfDay) {
             throw new AppException("Vé chưa thể sử dụng");
-        } else if (ticket.getExpireAt() < now) {
+        } else if (ticket.getExpireAt() < startDay) {
             throw new AppException("Vé đã hết hạn");
         }
     }

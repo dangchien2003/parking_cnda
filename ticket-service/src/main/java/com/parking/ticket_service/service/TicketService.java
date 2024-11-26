@@ -321,7 +321,7 @@ public class TicketService {
 
         if (ticket == null)
             throw new AppException(ErrorCode.TICKET_NOTFOUND);
-        
+
         TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
         ticketResponse.setBuyTime(TimeUtils.convertTime(ticket.getBuyAt(), "HH:mm dd/MM/yyyy"));
         ticketResponse.setExpireTime(TimeUtils.convertTime(ticket.getExpireAt(), "HH:mm dd/MM/yyyy"));
@@ -559,13 +559,21 @@ public class TicketService {
         return Instant.now().plus(1, chronoUnit).toEpochMilli();
     }
 
-    public List<TicketResponse> getAll(int page, String vehicle, String status) {
+    public List<TicketResponse> getAll(int page, String vehicle) {
         int pageSize = 20;
 
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Pageable pageable = PageUtils.getPageable(page, pageSize, PageUtils.getSort("ESC", "buyAt"));
-        Page<Ticket> pageData = ticketRepository.findByUid(uid, pageable);
+        Page<Ticket> pageData;
+
+        if (vehicle.equalsIgnoreCase("all")) {
+            pageData = ticketRepository.findByUid(uid, pageable);
+        } else if (vehicle.equalsIgnoreCase("car")) {
+            pageData = ticketRepository.findByUidAndCategory_Vehicle(uid, "CAR", pageable);
+        } else {
+            pageData = ticketRepository.findByUidAndCategory_Vehicle(uid, "MOTORBIKE", pageable);
+        }
 
         return pageData.getContent().stream().map(ticket -> {
             TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
@@ -576,6 +584,8 @@ public class TicketService {
             } else {
                 ticketResponse.setStatus("Đang sử dụng");
             }
+
+            ticketResponse.setStartTime(TimeUtils.convertTime(ticket.getStartAt(), "dd/MM/yyyy"));
 
             return ticketResponse;
         }).toList();

@@ -108,10 +108,9 @@ public class TicketController {
 
     @GetMapping("/all")
     ApiResponse<List<TicketResponse>> getAll(@RequestParam("page") int page,
-                                             @RequestParam("vehicle") String vehicle,
-                                             @RequestParam("status") String status) {
+                                             @RequestParam("vehicle") String vehicle) {
         return ApiResponse.<List<TicketResponse>>builder()
-                .result(ticketService.getAll(page, vehicle, status))
+                .result(ticketService.getAll(page, vehicle))
                 .build();
     }
 

@@ -17,6 +17,8 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
 
     Page<Ticket> findByUid(String uid, Pageable pageable);
 
+    Page<Ticket> findByUidAndCategory_Vehicle(String uid, String vehicle, Pageable pageable);
+
     List<Ticket> findAllByUidAndUsedAtBetween(String uid, long start, long end);
 
     int countByUid(String uid);
