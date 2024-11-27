@@ -16,4 +16,5 @@ public class ManagerDetailCategoryResponse {
     String type;
     String timeEnd;
     int price;
+    String status;
 }

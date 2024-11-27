@@ -53,13 +53,36 @@ public class CategoryService {
     public CategoryResponse create(CategoryCreatitonRequest request) {
 
         long now = Instant.now().toEpochMilli();
-        Category category = categoryMapper.toCategory(request);
-        category.setStatus(ECategoryStatus.INACTIVE.name());
-        category.setUnit(ENumUtils
-                .getType(ECategoryUnit.class, request.getUnit())
-                .name());
+
+        Category category = categoryRepository.findById(request.getId()).orElse(null);
+
+        if (category != null) {
+            throw new AppException("Vé đã tồn tại");
+        }
+
+        if (!request.getVehicle().equalsIgnoreCase("CAR") &&
+                !request.getVehicle().equalsIgnoreCase("MOTORBIKE")) {
+            throw new AppException("Phương tiện không hỗ trợ");
+        }
+
+        category = categoryMapper.toCategory(request);
+        category.setVehicle(request.getVehicle().toUpperCase());
+        try {
+            category.setStatus(ECategoryStatus.valueOf(request.getStatus()).name());
+        } catch (Exception e) {
+            throw new AppException("Trạng thái phải là: ACTIVE hoặc INACTIVE");
+        }
+
+        try {
+            category.setUnit(ENumUtils
+                    .getType(ECategoryUnit.class, request.getUnit())
+                    .name());
+        } catch (Exception e) {
+            throw new AppException("Đơn vị không nằm trong: TIMES, DAY, WEEK, MONTH");
+        }
         category.setCreateAt(now);
         category.setModifiedAt(now);
+
 
         category = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(category);
@@ -103,6 +126,7 @@ public class CategoryService {
             record.setType(convertToType(item.getUnit()));
             record.setTimeEnd(convertToTimeEnd(item.getUnit(), item.getQuantity()));
             record.setPrice(item.getPrice());
+            record.setStatus(item.getStatus());
             return record;
         }).toList();
     }
