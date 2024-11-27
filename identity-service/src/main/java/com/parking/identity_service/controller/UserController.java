@@ -5,6 +5,7 @@ import com.parking.identity_service.dto.request.CustomerCreationRequest;
 import com.parking.identity_service.dto.request.GoogleAuthenticationRequest;
 import com.parking.identity_service.dto.request.StaffCreationRequest;
 import com.parking.identity_service.dto.response.ApiResponse;
+import com.parking.identity_service.dto.response.DanhSachTaiKhoanResponse;
 import com.parking.identity_service.dto.response.UserResponse;
 import com.parking.identity_service.service.UserService;
 import jakarta.validation.Valid;
@@ -54,6 +55,16 @@ public class UserController {
     ApiResponse<UserResponse> getUser(@PathVariable(name = "id") String id) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUser(id))
+                .build();
+    }
+
+    @GetMapping("ds-tai-khoan")
+    ApiResponse<List<DanhSachTaiKhoanResponse>> layDsTaiKhoan(@RequestParam(name = "name", required = false) String name,
+                                                              @RequestParam(name = "status", required = false) String status,
+                                                              @RequestParam(name = "page", required = false, defaultValue = "1") int page
+    ) {
+        return ApiResponse.<List<DanhSachTaiKhoanResponse>>builder()
+                .result(userService.layDsTK(name, status, page))
                 .build();
     }
 

@@ -38,12 +38,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -277,6 +275,70 @@ public class TicketService {
         }
 
         return folder + '/' + nameImage;
+    }
+
+    public List<Ticket> getListBetween(String date) {
+        String[] split = date.split("/");
+        LocalDate firstDayOfMonth = LocalDate.of(Integer.parseInt(split[1]), Integer.parseInt(split[0]), 1);
+        long startOfMonth = firstDayOfMonth
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        LocalDate lastDayOfMonth = firstDayOfMonth.withDayOfMonth(firstDayOfMonth.lengthOfMonth());
+        long endOfMonth = lastDayOfMonth
+                .atTime(23, 59, 59, 999_999_999)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        return ticketRepository.findAllByBuyAtBetweenOrderByBuyAtAsc(startOfMonth, endOfMonth);
+    }
+
+    public List<tkvbResponse> tkVeBan(String date1) {
+
+        List<Ticket> tickets = getListBetween(date1);
+
+        Map<String, tkvbResponse> statisticsByDate = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        for (Ticket ticket : tickets) {
+            String date = dateFormat.format(new Date(ticket.getBuyAt()));
+
+            tkvbResponse response = statisticsByDate.getOrDefault(date, new tkvbResponse(date, 0, 0));
+
+            if (ticket.getCategory().getVehicle().equalsIgnoreCase("motorbike")) {
+                response.setMotorbike(response.getMotorbike() + 1);
+            } else if (ticket.getCategory().getVehicle().equalsIgnoreCase("car")) {
+                response.setCar(response.getCar() + 1);
+            }
+
+            statisticsByDate.put(date, response);
+        }
+
+        return new ArrayList<>(statisticsByDate.values());
+    }
+
+
+    public List<tkdtResponse> tkdt(String date1) {
+
+        List<Ticket> tickets = getListBetween(date1);
+
+        Map<String, Integer> revenueByDate = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        for (Ticket ticket : tickets) {
+            String date = dateFormat.format(new Date(ticket.getBuyAt()));
+
+            revenueByDate.put(date, revenueByDate.getOrDefault(date, 0) + ticket.getPrice());
+        }
+
+        List<tkdtResponse> result = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : revenueByDate.entrySet()) {
+            result.add(new tkdtResponse(entry.getKey(), entry.getValue()));
+        }
+
+        return result;
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")

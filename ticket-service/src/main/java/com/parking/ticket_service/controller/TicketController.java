@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.parking.ticket_service.dto.request.BuyTicketRequest;
 import com.parking.ticket_service.dto.request.CancelQrRequest;
 import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
-import com.parking.ticket_service.dto.response.ApiResponse;
-import com.parking.ticket_service.dto.response.RecentActivityResponse;
-import com.parking.ticket_service.dto.response.TicketResponse;
+import com.parking.ticket_service.dto.response.*;
+import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -63,6 +62,38 @@ public class TicketController {
     ApiResponse<String> renderQr(@PathVariable(name = "ticketId") String ticket) throws Exception {
         return ApiResponse.<String>builder()
                 .result(ticketService.renderQr(ticket))
+                .build();
+    }
+
+//    @GetMapping("mn/da-ban")
+//    ApiResponse<List<Object>> layVeDaBan(@RequestParam(name = "page", defaultValue = "1", required = false) int page,
+//                                         @RequestParam(name = "start", required = false) String start,
+//                                         @RequestParam(name = "end", required = false) String end,
+//                                         @RequestParam(name = "email", required = false) String email,
+//                                         @RequestParam(name = "plate", required = false) String plate,
+//                                         @RequestParam(name = "vehicle", required = false) String vehicle
+//    ) {
+//
+//    }
+
+    @GetMapping("thong-ke/tk-ve-ban")
+    ApiResponse<List<tkvbResponse>> tkVeBan(@RequestParam("date") String date) {
+        return ApiResponse.<List<tkvbResponse>>builder()
+                .result(ticketService.tkVeBan(date))
+                .build();
+    }
+
+    @GetMapping("thong-ke/tk-doanh-thu")
+    ApiResponse<List<tkdtResponse>> tkdt(@RequestParam("date") String date) {
+        return ApiResponse.<List<tkdtResponse>>builder()
+                .result(ticketService.tkdt(date))
+                .build();
+    }
+
+    @GetMapping("ds-ve-ban")
+    ApiResponse<List<Ticket>> dsVeBan(@RequestParam("date") String date) {
+        return ApiResponse.<List<Ticket>>builder()
+                .result(ticketService.getListBetween(date))
                 .build();
     }
 

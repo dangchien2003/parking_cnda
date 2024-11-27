@@ -25,6 +25,8 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
 
     List<Ticket> findAllByUidAndUsedAtBetween(String uid, long start, long end);
 
+    List<Ticket> findAllByBuyAtBetweenOrderByBuyAtAsc(long start, long end);
+
     int countByUid(String uid);
 
     @Query("SELECT t FROM ticket t " +

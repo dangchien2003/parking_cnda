@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 
 @RequiredArgsConstructor
@@ -81,5 +82,14 @@ public class CustomerProfileService {
         CustomerProfileResponse customerProfileResponse = customerProfileMapper.toCustomerProfileResponse(profileCustomer);
         customerProfileResponse.setEmail(userResponse.getEmail());
         return customerProfileResponse;
+    }
+
+    public List<ProfileCustomer> getCustomerByName(String name, int page) {
+        int limit = 30;
+        return customerProfileRepository.getByLikeName(name, (page - 1) * limit, page * limit);
+    }
+
+    public List<ProfileCustomer> getCustomerByIds(List<String> ids) {
+        return customerProfileRepository.findAllById(ids);
     }
 }

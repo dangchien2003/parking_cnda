@@ -1,7 +1,9 @@
 package com.parking.identity_service.service;
 
 import com.parking.identity_service.dto.request.*;
+import com.parking.identity_service.dto.response.DanhSachTaiKhoanResponse;
 import com.parking.identity_service.dto.response.GoogleUserProfileResponse;
+import com.parking.identity_service.dto.response.ProfileCustomer;
 import com.parking.identity_service.dto.response.UserResponse;
 import com.parking.identity_service.entity.Role;
 import com.parking.identity_service.entity.User;
@@ -15,6 +17,7 @@ import com.parking.identity_service.repository.RoleRepository;
 import com.parking.identity_service.repository.UserRepository;
 import com.parking.identity_service.repository.httpclient.ProfileClient;
 import com.parking.identity_service.repository.httpclient.VaultClient;
+import com.parking.identity_service.utils.PageUtils;
 import com.parking.identity_service.utils.RandomUtils;
 import com.parking.identity_service.validator.ValidEmail;
 import lombok.AccessLevel;
@@ -27,9 +30,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -138,5 +139,68 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
 
         return userMapper.toUserResponse(user);
+    }
+
+    public List<DanhSachTaiKhoanResponse> layDsTK(String name, String status, int page) {
+        int limit = 30;
+
+        List<ProfileCustomer> profiles = null;
+        List<String> ids;
+        List<User> users;
+        if (!name.isEmpty()) {
+            profiles = profileClient.getByName(name, page).getResult();
+        }
+
+        if (profiles != null) {
+            ids = profiles.stream().map(ProfileCustomer::getUid).toList();
+            users = userRepository.findAllByUidIn(ids);
+        } else {
+            if (status.equalsIgnoreCase("block")) {
+                users = userRepository.findAllByIsBlocked(1, PageUtils.getPageable(page, limit, PageUtils.getSort("ASC", "uid")));
+            } else if (status.equalsIgnoreCase("active")) {
+                users = userRepository.findAllByIsBlocked(0, PageUtils.getPageable(page, limit, PageUtils.getSort("ASC", "uid")));
+            } else {
+                users = userRepository.findAll(PageUtils.getPageable(page, limit, PageUtils.getSort("ASC", "uid"))).getContent();
+            }
+
+            ids = users.stream().map(User::getUid).toList();
+
+            profiles = profileClient.getByListId(ids).getResult();
+        }
+
+
+        users.sort(Comparator.comparing(User::getUid));
+        profiles.sort(Comparator.comparing(ProfileCustomer::getUid));
+
+
+        List<DanhSachTaiKhoanResponse> response = new ArrayList<>();
+        int index_profile = 0;
+        for (int i = 0; i < users.size(); i++) {
+            User u = users.get(i);
+            ProfileCustomer p = profiles.get(index_profile);
+
+            if (i > profiles.size()) {
+                DanhSachTaiKhoanResponse item = DanhSachTaiKhoanResponse.builder()
+                        .id(u.getUid())
+                        .email(u.getEmail())
+                        .status(u.getIsBlocked() == 1 ? "Đã khoá" : "Đang hoạt động")
+                        .build();
+                response.add(item);
+            } else if (u.getUid().equalsIgnoreCase(p.getUid())) {
+                DanhSachTaiKhoanResponse item = DanhSachTaiKhoanResponse.builder()
+                        .id(u.getUid())
+                        .sdt(p.getPhone())
+                        .name(p.getName())
+                        .email(u.getEmail())
+                        .status(u.getIsBlocked() == 1 ? "Đã khoá" : "Đang hoạt động")
+                        .build();
+                index_profile++;
+                response.add(item);
+            } else {
+                System.out.println("else___");
+            }
+        }
+
+        return response;
     }
 }
