@@ -7,6 +7,7 @@ import com.parking.identity_service.dto.request.StaffCreationRequest;
 import com.parking.identity_service.dto.response.ApiResponse;
 import com.parking.identity_service.dto.response.DanhSachTaiKhoanResponse;
 import com.parking.identity_service.dto.response.UserResponse;
+import com.parking.identity_service.entity.User;
 import com.parking.identity_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -65,6 +66,13 @@ public class UserController {
     ) {
         return ApiResponse.<List<DanhSachTaiKhoanResponse>>builder()
                 .result(userService.layDsTK(name, status, page))
+                .build();
+    }
+
+    @GetMapping("internal/get-all-by-emails")
+    ApiResponse<List<User>> getListUser(@RequestParam("emails") List<String> emails) {
+        return ApiResponse.<List<User>>builder()
+                .result(userService.getListUser(emails))
                 .build();
     }
 

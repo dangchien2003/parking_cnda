@@ -141,6 +141,10 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    public List<User> getListUser(List<String> emails) {
+        return userRepository.findAllByEmailIn(emails);
+    }
+
     public List<DanhSachTaiKhoanResponse> layDsTK(String name, String status, int page) {
         int limit = 30;
 

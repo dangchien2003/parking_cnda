@@ -16,5 +16,5 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findAllByIsBlocked(int block, Pageable pageable);
 
-
+    List<User> findAllByEmailIn(List<String> emails);
 }

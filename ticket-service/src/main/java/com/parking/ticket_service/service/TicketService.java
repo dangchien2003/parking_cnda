@@ -2,10 +2,7 @@ package com.parking.ticket_service.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.parking.ticket_service.dto.request.AddFluctuationRequest;
-import com.parking.ticket_service.dto.request.BuyTicketRequest;
-import com.parking.ticket_service.dto.request.CancelQrRequest;
-import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
+import com.parking.ticket_service.dto.request.*;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.entity.Plate;
@@ -20,6 +17,7 @@ import com.parking.ticket_service.repository.CategoryRepository;
 import com.parking.ticket_service.repository.PlateRepository;
 import com.parking.ticket_service.repository.RedisRepository;
 import com.parking.ticket_service.repository.TicketRepository;
+import com.parking.ticket_service.repository.httpclient.IdentityClient;
 import com.parking.ticket_service.repository.httpclient.VaultClient;
 import com.parking.ticket_service.repository.uploader.CloudinaryUploader;
 import com.parking.ticket_service.utils.AESUtils;
@@ -43,6 +41,7 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -58,6 +57,7 @@ public class TicketService {
     TicketCacheService ticketCacheService;
     TicketMapper ticketMapper;
     VaultClient vaultClient;
+    IdentityClient identityClient;
     ObjectMapper objectMapper;
     CloudinaryUploader cloudinaryUploader;
     CategoryService categoryService;
@@ -275,6 +275,78 @@ public class TicketService {
         }
 
         return folder + '/' + nameImage;
+    }
+
+    public List<Ticket> adminBuyForListEmail(AdminBuyTicket request) {
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOTFOUND));
+
+        List<User> users = identityClient.getAllUser(request.getEmails()).getResult();
+
+        List<String> existingEmails = users.stream()
+                .map(User::getEmail)
+                .collect(Collectors.toList());
+
+        List<String> emailNotExist = request.getEmails().stream()
+                .filter(email -> !existingEmails.contains(email))
+                .collect(Collectors.toList());
+
+        if (users.isEmpty() || emailNotExist.size() == request.getEmails().size()) {
+            throw new AppException("Tất cả email đều không tồn tại");
+        }
+
+        List<String> emailBlocked = users.stream()
+                .filter(user -> user.getIsBlocked() == 1)
+                .map(User::getEmail)
+                .collect(Collectors.toList());
+
+        StringBuilder error = new StringBuilder();
+        if (!emailBlocked.isEmpty()) {
+            error.append("Email đã bị khoá: ")
+                    .append(String.join(", ", emailBlocked));
+        }
+
+        if (!emailNotExist.isEmpty()) {
+            if (error.length() > 0) {
+                error.append(" | ");
+            }
+            error.append("Không tìm thấy tài khoản: ")
+                    .append(String.join(", ", emailNotExist));
+        }
+
+        if (!error.isEmpty()) {
+            throw new AppException(error.toString());
+        }
+        long from;
+        long to;
+        try {
+            from = TimeUtils.getStartOfDay(request.getStart());
+            to = TimeUtils.getEndOfDay(request.getEnd());
+        } catch (Exception e) {
+            throw new AppException("Định dạng thời gian không hợp lệ");
+        }
+
+        int day = calculateDays(from, to);
+
+        List<Ticket> tickets = new ArrayList<>();
+        long now = Instant.now().toEpochMilli();
+        users.forEach(item -> {
+            Ticket ticket = Ticket.builder()
+                    .id(UUID.randomUUID().toString())
+                    .uid(item.getUid())
+                    .buyAt(now)
+                    .turnTotal(day * category.getPrice())
+                    .expireAt(to)
+                    .startAt(from)
+                    .category(category)
+                    .turnTotal(0)
+                    .build();
+
+            tickets.add(ticket);
+        });
+
+        ticketRepository.saveAll(tickets);
+        return tickets;
     }
 
     public List<Ticket> tkdsVeBan(String start, String end, String vehicle, int page) {

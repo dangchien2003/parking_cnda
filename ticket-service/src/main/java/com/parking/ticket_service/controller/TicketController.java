@@ -1,5 +1,6 @@
 package com.parking.ticket_service.controller;
 
+import com.parking.ticket_service.dto.request.AdminBuyTicket;
 import com.parking.ticket_service.dto.request.BuyTicketRequest;
 import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
 import com.parking.ticket_service.dto.response.*;
@@ -109,6 +110,14 @@ public class TicketController {
                                         @RequestParam(name = "page", required = false, defaultValue = "1") int page) {
         return ApiResponse.<List<Ticket>>builder()
                 .result(ticketService.tkdsVeBan(start, end, vehicle, page))
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    @PostMapping("buy/adminBuyForListEmail")
+    ApiResponse<List<Ticket>> adminBuyForListEmail(@Valid @RequestBody AdminBuyTicket request) {
+        return ApiResponse.<List<Ticket>>builder()
+                .result(ticketService.adminBuyForListEmail(request))
                 .build();
     }
 
