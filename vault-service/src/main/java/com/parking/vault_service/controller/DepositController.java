@@ -3,10 +3,11 @@ package com.parking.vault_service.controller;
 import com.parking.vault_service.dto.request.DepositApproveRequest;
 import com.parking.vault_service.dto.request.DepositCreationRequest;
 import com.parking.vault_service.dto.request.StaffCancelDepositRequest;
-import com.parking.vault_service.dto.response.*;
+import com.parking.vault_service.dto.response.ApiResponse;
+import com.parking.vault_service.dto.response.DepositResponse;
+import com.parking.vault_service.dto.response.HistoryDeposit;
+import com.parking.vault_service.dto.response.TransactionInfo;
 import com.parking.vault_service.entity.Deposit;
-import com.parking.vault_service.entity.Fluctuation;
-import com.parking.vault_service.service.ApproveDeposit;
 import com.parking.vault_service.service.DepositService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +27,7 @@ import java.util.List;
 public class DepositController {
 
     DepositService depositService;
-    ApproveDeposit approveDeposit;
+//    ApproveDeposit approveDeposit;
 
     @PostMapping
     ApiResponse<DepositResponse> create(HttpServletRequest http,
@@ -42,21 +44,21 @@ public class DepositController {
                 .build();
     }
 
-
-    @GetMapping("/all/{type}")
-    ApiResponse<PageResponse<Deposit>> getAll(
-            @PathVariable(name = "type")
-            String type,
-            @RequestParam(name = "page")
-            @Min(value = 1)
-            int page,
-            @RequestParam(name = "sort", required = false)
-            String sort
-    ) {
-        return ApiResponse.<PageResponse<Deposit>>builder()
-                .result(depositService.getAll(type, page, sort))
-                .build();
-    }
+//
+//    @GetMapping("/all/{type}")
+//    ApiResponse<PageResponse<Deposit>> getAll(
+//            @PathVariable(name = "type")
+//            String type,
+//            @RequestParam(name = "page")
+//            @Min(value = 1)
+//            int page,
+//            @RequestParam(name = "sort", required = false)
+//            String sort
+//    ) {
+//        return ApiResponse.<PageResponse<Deposit>>builder()
+//                .result(depositService.getAll(type, page, sort))
+//                .build();
+//    }
 
     @GetMapping("/{type}")
     ApiResponse<Object> getAccepted(
@@ -94,18 +96,25 @@ public class DepositController {
                 .build();
     }
 
-    @GetMapping("/auto/approve")
-    ApiResponse<Void> autoApprove() {
-        approveDeposit.autoApprove();
+//    @GetMapping("/auto/approve")
+//    ApiResponse<Void> autoApprove() {
+//        approveDeposit.autoApprove();
+//        return ApiResponse.<Void>builder()
+//                .build();
+//    }
+
+
+    @PostMapping("approve")
+    ApiResponse<Void> approve(@Valid @RequestBody DepositApproveRequest request) {
+        depositService.approveDeposit(request);
         return ApiResponse.<Void>builder()
                 .build();
     }
 
-
-    @PostMapping("approve")
-    ApiResponse<List<Fluctuation>> approve(@Valid @RequestBody DepositApproveRequest request) {
-        return ApiResponse.<List<Fluctuation>>builder()
-                .result(depositService.approveDeposit(request))
+    @PostMapping("cancel")
+    ApiResponse<Void> cancel(@Valid @RequestBody DepositApproveRequest request) {
+        depositService.cancel(request);
+        return ApiResponse.<Void>builder()
                 .build();
     }
 
@@ -136,6 +145,16 @@ public class DepositController {
                                               @RequestParam(value = "page", defaultValue = "1") int page) {
         return ApiResponse.<List<HistoryDeposit>>builder()
                 .result(depositService.history(page, status, date))
+                .build();
+    }
+
+    @GetMapping("mn/history")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    ApiResponse<List<Deposit>> mnGetHistory(@RequestParam(value = "date", required = false) String date,
+                                            @RequestParam(value = "status", required = false) String status,
+                                            @RequestParam(value = "page", defaultValue = "1") int page) {
+        return ApiResponse.<List<Deposit>>builder()
+                .result(depositService.mnGetAllDeposit(date, status, page))
                 .build();
     }
 }

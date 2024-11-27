@@ -30,7 +30,7 @@ public enum ErrorCode {
     UPDATE_FAIL(5026, "Cập nhật không thành công", HttpStatus.BAD_REQUEST),
     LENGTH_TOO_SHORT(5027, "Dữ liệu phải có ít nhất: {min}", HttpStatus.BAD_REQUEST),
     WALLET_IN_STATUS(5028, "Ví đang ở trạng thái", HttpStatus.BAD_REQUEST),
-    DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED(5029, "Khoản tiền gửi không tồn tại hoặc đã được chấp thuận", HttpStatus.BAD_REQUEST),
+    DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED(5029, "Lệnh không tồn tại hoặc đã được chấp thuận", HttpStatus.BAD_REQUEST),
     NOT_FOUND_WALLET(5030, "Ví không tồn tại", HttpStatus.BAD_REQUEST),
     CANNOT_USE_WALLET(5031, "Không thể sử dụng ví", HttpStatus.BAD_REQUEST),
     DEPOSIT_FAIL(5032, "Gửi tiền không thành công", HttpStatus.BAD_REQUEST),

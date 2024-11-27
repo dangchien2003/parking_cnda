@@ -37,7 +37,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -57,14 +60,39 @@ public class DepositService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
-    public List<Fluctuation> approveDeposit(DepositApproveRequest request) {
+    public void cancel(DepositApproveRequest request) {
+        Deposit deposit = depositRepository.findByIdAndActionAtIsNullAndCancelAtIsNull(request.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED));
 
-        List<Deposit> deposits = depositRepository.findByIdInAndActionAtIsNull(Arrays.asList(request.getDeposits()));
+        deposit.setCancelAt(Instant.now().toEpochMilli());
+        depositRepository.save(deposit);
+    }
 
-        if (deposits.isEmpty())
-            throw new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED);
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    public void approveDeposit(DepositApproveRequest request) {
 
-        return approveDeposit.approveAction(deposits, "Staff approves deposit request");
+        Deposit deposit = depositRepository.findByIdAndActionAtIsNullAndCancelAtIsNull(request.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED));
+
+        deposit.setActionAt(Instant.now().toEpochMilli());
+        Owner owner = ownerRepository.findById(deposit.getOwnerId())
+                .orElseThrow(() -> new AppException(ErrorCode.OWNER_NOT_EXIST));
+        owner.setBalance(owner.getBalance() + deposit.getAmount());
+
+        Fluctuation fluctuation = Fluctuation.builder()
+                .id(UUID.randomUUID().toString())
+                .depositId(deposit.getId())
+                .description("STAFF APPREOVE")
+                .createAt(Instant.now().toEpochMilli())
+                .transaction(ETransaction.CREDIT.name())
+                .amount(deposit.getAmount())
+                .ownerId(owner.getId())
+                .reason(EReason.APPROVE.getValue())
+                .build();
+
+        depositRepository.save(deposit);
+        ownerRepository.save(owner);
+        fluctuationRepository.save(fluctuation);
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
@@ -147,31 +175,31 @@ public class DepositService {
         fluctuationRepository.save(fluctuation);
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
-    public PageResponse<Deposit> getAll(String type, int page, String sort) {
-
-        EGetAllDeposit eGetAllDeposit;
-
-        try {
-            eGetAllDeposit = ENumUtil.getType(EGetAllDeposit.class, type);
-        } catch (AppException e) {
-            throw new AppException(ErrorCode.NOTFOUND_URL);
-        }
-
-        Pageable pageable = PageUtil.getPageable(page, EPageQuantity.DEPOSIT.getQuantity(), sort, "createAt");
-
-        Page<Deposit> pageData;
-
-        switch (eGetAllDeposit) {
-            case ANY -> pageData = depositRepository.findAll(pageable);
-            case WAITING -> pageData = depositRepository.findAllByActionAtIsNullAndCancelAtIsNull(pageable);
-            case APPROVED -> pageData = depositRepository.findAllByActionAtIsNotNull(pageable);
-            case CANCELED -> pageData = depositRepository.findAllByCancelAtIsNotNull(pageable);
-            default -> throw new AppException(ErrorCode.UNSUPPORTED_FILTERS);
-        }
-
-        return PageUtil.renderPageResponse(pageData.getContent(), page, pageData.getSize());
-    }
+//    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+//    public PageResponse<Deposit> getAll(String type, int page, String sort) {
+//
+//        EGetAllDeposit eGetAllDeposit;
+//
+//        try {
+//            eGetAllDeposit = ENumUtil.getType(EGetAllDeposit.class, type);
+//        } catch (AppException e) {
+//            throw new AppException(ErrorCode.NOTFOUND_URL);
+//        }
+//
+//        Pageable pageable = PageUtil.getPageable(page, EPageQuantity.DEPOSIT.getQuantity(), sort, "createAt");
+//
+//        Page<Deposit> pageData;
+//
+//        switch (eGetAllDeposit) {
+//            case ANY -> pageData = depositRepository.findAll(pageable);
+//            case WAITING -> pageData = depositRepository.findAllByActionAtIsNullAndCancelAtIsNull(pageable);
+//            case APPROVED -> pageData = depositRepository.findAllByActionAtIsNotNull(pageable);
+//            case CANCELED -> pageData = depositRepository.findAllByCancelAtIsNotNull(pageable);
+//            default -> throw new AppException(ErrorCode.UNSUPPORTED_FILTERS);
+//        }
+//
+//        return PageUtil.renderPageResponse(pageData.getContent(), page, pageData.getSize());
+//    }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public void cancelDeposit(String id) {
@@ -304,6 +332,44 @@ public class DepositService {
             historyDeposit.setStatus(getStatus(deposit));
             return historyDeposit;
         }).toList();
+    }
+
+
+    public List<Deposit> mnGetAllDeposit(String date, String status, int page) {
+        int limit = 30;
+
+        long startDay = 0;
+        long endDay = 0;
+        if (!date.isEmpty()) {
+            startDay = TimeUtils.getStartOfDay(date);
+            endDay = TimeUtils.getEndOfDay(date);
+        }
+        List<Deposit> list;
+
+        Pageable pageable = PageUtil.getPageable(page, limit, PageUtil.getSort("ASC", "createAt"));
+        if (startDay != 0) {
+            if (status.isEmpty() || status.equalsIgnoreCase("ALL")) {
+                list = depositRepository.findAllByCreateAtIsBetween(startDay, endDay, pageable);
+            } else if (status.equalsIgnoreCase("APPROVE")) {
+                list = depositRepository.findAllByCreateAtIsBetweenAndActionAtIsNotNull(startDay, endDay, pageable);
+            } else if (status.equalsIgnoreCase("WAIT")) {
+                list = depositRepository.findAllByCreateAtIsBetweenAndActionAtIsNull(startDay, endDay, pageable);
+            } else {
+                list = depositRepository.findAllByCreateAtIsBetweenAndCancelAtIsNotNull(startDay, endDay, pageable);
+            }
+        } else {
+            if (status.isEmpty()) {
+                list = depositRepository.findAll(pageable).getContent();
+            } else if (status.equalsIgnoreCase("APPROVE")) {
+                list = depositRepository.findAllByActionAtIsNotNull(pageable).getContent();
+            } else if (status.equalsIgnoreCase("WAIT")) {
+                list = depositRepository.findAllByActionAtIsNull(pageable);
+            } else {
+                list = depositRepository.findAllByCancelAtIsNotNull(pageable).getContent();
+            }
+        }
+
+        return list;
     }
 
     String getStatus(Deposit deposit) {
