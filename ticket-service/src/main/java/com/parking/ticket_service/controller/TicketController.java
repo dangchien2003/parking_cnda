@@ -1,16 +1,16 @@
 package com.parking.ticket_service.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.parking.ticket_service.dto.request.BuyTicketRequest;
-import com.parking.ticket_service.dto.request.CancelQrRequest;
 import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.service.TicketService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,7 +65,7 @@ public class TicketController {
                 .build();
     }
 
-//    @GetMapping("mn/da-ban")
+    //    @GetMapping("mn/da-ban")
 //    ApiResponse<List<Object>> layVeDaBan(@RequestParam(name = "page", defaultValue = "1", required = false) int page,
 //                                         @RequestParam(name = "start", required = false) String start,
 //                                         @RequestParam(name = "end", required = false) String end,
@@ -75,7 +75,7 @@ public class TicketController {
 //    ) {
 //
 //    }
-
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     @GetMapping("thong-ke/tk-ve-ban")
     ApiResponse<List<tkvbResponse>> tkVeBan(@RequestParam("date") String date) {
         return ApiResponse.<List<tkvbResponse>>builder()
@@ -83,6 +83,7 @@ public class TicketController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     @GetMapping("thong-ke/tk-doanh-thu")
     ApiResponse<List<tkdtResponse>> tkdt(@RequestParam("date") String date) {
         return ApiResponse.<List<tkdtResponse>>builder()
@@ -90,6 +91,7 @@ public class TicketController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     @GetMapping("ds-ve-ban")
     ApiResponse<List<Ticket>> dsVeBan(@RequestParam("date") String date) {
         return ApiResponse.<List<Ticket>>builder()
@@ -97,12 +99,19 @@ public class TicketController {
                 .build();
     }
 
-    @DeleteMapping("/qr")
-    ApiResponse<String> cancelQr(@RequestBody CancelQrRequest request) throws JsonProcessingException {
-        ticketService.cancelQr(request);
-        return ApiResponse.<String>builder()
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    @GetMapping("timkiem-ds-ve-ban")
+    ApiResponse<List<Ticket>> tkdsVeBan(@RequestParam("start") String start,
+                                        @RequestParam("end") String end,
+                                        @RequestParam(name = "vehicle", required = false) String vehicle,
+                                        @Valid
+                                        @Min(value = 1, message = "Số trang phải lớn hơn 1")
+                                        @RequestParam(name = "page", required = false, defaultValue = "1") int page) {
+        return ApiResponse.<List<Ticket>>builder()
+                .result(ticketService.tkdsVeBan(start, end, vehicle, page))
                 .build();
     }
+
 
 //    @PostMapping("/checkin/first")
 //    ApiResponse<Void> firstCheckin(@RequestHeader(name = "station") String station,

@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class CategoryController {
 
     CategoryService categoryService;
 
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     @PostMapping
     ApiResponse<CategoryResponse> create(@Valid @RequestBody CategoryCreatitonRequest request) {
         return ApiResponse.<CategoryResponse>builder()
@@ -34,12 +36,23 @@ public class CategoryController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     @PatchMapping
     ApiResponse<CategoryResponse> update(@Valid @RequestBody CategoryUpdateRequest request) {
         return ApiResponse.<CategoryResponse>builder()
                 .result(categoryService.update(request))
                 .build();
     }
+
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    @GetMapping("tim-kiem-ve")
+    ApiResponse<List<CategoryResponse>> timKiemVe(@RequestParam("vehicle") String vehicle,
+                                                  @RequestParam("status") String status) {
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .result(categoryService.timKiemVe(vehicle, status))
+                .build();
+    }
+
 
     @GetMapping("/all")
     ApiResponse<List<ManagerDetailCategoryResponse>> findAll(

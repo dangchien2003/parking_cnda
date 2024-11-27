@@ -50,7 +50,6 @@ public class CategoryService {
     CategoryMapper categoryMapper;
     SettingRepository settingRepository;
 
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public CategoryResponse create(CategoryCreatitonRequest request) {
 
         long now = Instant.now().toEpochMilli();
@@ -66,7 +65,6 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public CategoryResponse update(CategoryUpdateRequest request) {
 
         Category category = categoryRepository.findById(request.getId())
@@ -248,6 +246,29 @@ public class CategoryService {
         }
 
         return calcEmptyPosition(tickets, startAt, endAt, max);
+    }
+
+    public List<CategoryResponse> timKiemVe(String vehicle, String status) {
+        if (!vehicle.equalsIgnoreCase("CAR") && !vehicle.equalsIgnoreCase("MOTORBIKE")) {
+            throw new AppException("Phương tiện không xác định");
+        }
+        ECategoryStatus categoryStatus;
+
+        try {
+            categoryStatus = ECategoryStatus.valueOf(status.toUpperCase());
+        } catch (Exception e) {
+            throw new AppException("Trạng thái không phù hợp");
+        }
+
+        return categoryRepository.findAllByVehicleAndStatus(vehicle.toUpperCase(), categoryStatus.name())
+                .stream().map(item -> {
+                    CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(item);
+                    categoryResponse.setDuration("Tuỳ chỉnh thời gian sử dụng");
+                    categoryResponse.setUsage("Không giới hạn số lần");
+                    categoryResponse.setUnit("Vé ngày");
+                    categoryResponse.setVehicle(item.getVehicle().equalsIgnoreCase("CAR") ? "Ô tô" : "Xe máy");
+                    return categoryResponse;
+                }).toList();
     }
 
     public List<EmptyPositionResponse> calcEmptyPosition(List<Ticket> tickets, long startAt, long endAt, int max) {

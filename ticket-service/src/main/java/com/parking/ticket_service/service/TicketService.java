@@ -277,6 +277,26 @@ public class TicketService {
         return folder + '/' + nameImage;
     }
 
+    public List<Ticket> tkdsVeBan(String start, String end, String vehicle, int page) {
+        long from = TimeUtils.getStartOfDay(start);
+        long to = TimeUtils.getEndOfDay(end);
+
+        Pageable pageable = PageUtils.getPageable(page, 3, PageUtils.getSort("ASC", "buyAt"));
+
+        if (!vehicle.isEmpty() & vehicle.equalsIgnoreCase("CAR") && vehicle.equalsIgnoreCase("MOTORBIKE")) {
+            throw new AppException("Phương tiện không phù hợp");
+        }
+        List<Ticket> tickets;
+        if (vehicle.isEmpty()) {
+            tickets = ticketRepository.findAllByBuyAtBetween(from, to, pageable);
+        } else {
+            tickets = ticketRepository.findAllByBuyAtBetweenAndCategory_Vehicle(from, to, vehicle.toUpperCase(), pageable);
+        }
+
+        return tickets;
+    }
+
+
     public List<Ticket> getListBetween(String date) {
         String[] split = date.split("/");
         LocalDate firstDayOfMonth = LocalDate.of(Integer.parseInt(split[1]), Integer.parseInt(split[0]), 1);
