@@ -102,7 +102,7 @@ public class CategoryService {
             record.setVehicle(item.getVehicle());
             record.setType(convertToType(item.getUnit()));
             record.setTimeEnd(convertToTimeEnd(item.getUnit(), item.getQuantity()));
-
+            record.setPrice(item.getPrice());
             return record;
         }).toList();
     }

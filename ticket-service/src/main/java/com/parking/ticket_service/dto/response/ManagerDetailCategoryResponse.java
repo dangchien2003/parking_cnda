@@ -15,4 +15,5 @@ public class ManagerDetailCategoryResponse {
     String vehicle;
     String type;
     String timeEnd;
+    int price;
 }
