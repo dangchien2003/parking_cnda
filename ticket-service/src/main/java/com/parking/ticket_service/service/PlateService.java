@@ -34,4 +34,14 @@ public class PlateService {
             return plateResponse;
         }).toList();
     }
+
+    public PlateResponse getFirst(String ticketId) {
+        List<PlateResponse> plates = getAllPlate(ticketId);
+
+        if (plates.isEmpty()) {
+            return null;
+        }
+
+        return plates.getFirst();
+    }
 }

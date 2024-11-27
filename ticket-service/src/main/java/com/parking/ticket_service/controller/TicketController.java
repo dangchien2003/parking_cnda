@@ -53,9 +53,8 @@ public class TicketController {
 
     @PatchMapping("/extend/{ticketId}")
     ApiResponse<Void> extendTicket(@PathVariable(name = "ticketId") String ticket,
-                                   @RequestParam(name = "date") String date,
-                                   @RequestParam(name = "time") String time) {
-        ticketService.extendTicket(ticket, date, time);
+                                   @RequestParam(name = "date") String date) {
+        ticketService.extendTicket(ticket, date);
         return ApiResponse.<Void>builder()
                 .build();
     }
@@ -126,6 +125,13 @@ public class TicketController {
     ApiResponse<Integer> countUseTimesInMonth() {
         return ApiResponse.<Integer>builder()
                 .result(ticketService.countUseTimesInMonth())
+                .build();
+    }
+
+    @GetMapping("count/total-turn")
+    ApiResponse<Integer> getTotalTurn() {
+        return ApiResponse.<Integer>builder()
+                .result(ticketService.getTotalTurn())
                 .build();
     }
 

@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PlateRepository extends JpaRepository<Plate, PlateId> {
-    @Query(value = "SELECT COUNT(*) FROM plate p WHERE p.ticket_id IN :ticketIds AND used_at BETWEEN :start AND :end", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM plate p WHERE p.ticket_id IN :ticketIds AND used_at BETWEEN :start AND :end order by turn DESC", nativeQuery = true)
     int countByTicketIds(@Param("ticketIds") List<String> ticketIds, @Param("start") long start, @Param("end") long end);
 
     List<Plate> findAllById_TicketId(String ticket);

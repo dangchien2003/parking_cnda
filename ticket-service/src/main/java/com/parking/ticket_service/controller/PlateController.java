@@ -28,4 +28,11 @@ public class PlateController {
                 .result(plateService.getAllPlate(ticketId))
                 .build();
     }
+
+    @GetMapping("first")
+    ApiResponse<PlateResponse> getFirst(@RequestParam("ticket") String ticketId) {
+        return ApiResponse.<PlateResponse>builder()
+                .result(plateService.getFirst(ticketId))
+                .build();
+    }
 }

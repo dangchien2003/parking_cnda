@@ -17,6 +17,10 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
 
     Page<Ticket> findByUid(String uid, Pageable pageable);
 
+    List<Ticket> findByUidAndTurnTotalGreaterThan(String uid, int than, Pageable pageable);
+
+    List<Ticket> findAllByUidAndTurnTotalGreaterThan(String uid, int totalGreaterThan);
+
     Page<Ticket> findByUidAndCategory_Vehicle(String uid, String vehicle, Pageable pageable);
 
     List<Ticket> findAllByUidAndUsedAtBetween(String uid, long start, long end);
@@ -33,4 +37,6 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
                              @Param("start2") Long start2,
                              @Param("end2") Long end2,
                              @Param("vehicle") String vehicle);
+
+
 }

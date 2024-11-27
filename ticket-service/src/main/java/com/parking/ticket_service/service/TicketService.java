@@ -334,7 +334,7 @@ public class TicketService {
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public void extendTicket(String ticketId, String date, String time) {
+    public void extendTicket(String ticketId, String date) {
 
         Ticket ticket = getTicket(ticketId);
 
@@ -342,27 +342,16 @@ public class TicketService {
         if (Objects.isNull(plate) || plate.getCheckoutAt() > 0)
             throw new AppException(ErrorCode.UNUSED_TICKET);
 
-        if (
-                ticket.getExpireAt() > Instant.now().toEpochMilli() ||
-                        ticket.getTurnTotal() == 0)
+        if (ticket.getExpireAt() > Instant.now().toEpochMilli() ||
+                ticket.getTurnTotal() == 0)
             throw new AppException(ErrorCode.EXTEND_FAIL);
 
+        long newExpire = TimeUtils.timeToLong("23:59:59 " + date, "HH:mm:ss dd/MM/yyyy");
 
-        String expireStr = date + " " + time;
-        String formatExpire = "yyyy-MM-dd HH:mm";
-        if (!TimeUtils.isValidDateTime(expireStr, formatExpire))
-            throw new AppException(ErrorCode.INVALID_FORMAT_DATETIME);
 
-        long newExpire = TimeUtils.timeToLong(expireStr, formatExpire);
-        long difference = Duration
-                .between(Instant.now(), Instant.ofEpochMilli(newExpire))
-                .toMinutes();
+        int days = calculateDays(ticket.getExpireAt(), newExpire);
 
-        if (difference < 15) {
-            throw new AppException(ErrorCode.INVALID_NEW_EXPIRE);
-        }
-
-        long amount = difference * EXTENDED_UNIT_PRICE_ONE_MINUTE;
+        long amount = days * ticket.getCategory().getPrice() * 2;
         BalenceResponse balance = vaultClient.getBalance().getResult();
 
         if (balance.getBalence() < amount)
@@ -419,8 +408,12 @@ public class TicketService {
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public TicketResponse updatePlate(TicketUpdatePlateRequest request) {
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Ticket ticket = getTicket(request.getTicketId());
+
+        if (!ticket.getUid().equalsIgnoreCase(uid))
+            throw new AppException(ErrorCode.TICKET_NOTFOUND);
 
         if ((ticket.getTurnTotal() > 0 && !Objects.isNull(ticket.getContentPlate()))
         )
@@ -619,10 +612,23 @@ public class TicketService {
         return plateRepository.countByTicketIds(ticketIds, start, end);
     }
 
+    public int getTotalTurn() {
+        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+
+
+        List<Ticket> tickets = ticketRepository.findAllByUidAndTurnTotalGreaterThan(uid, 0);
+        int sum = 0;
+        for (Ticket ticket : tickets) {
+            sum += ticket.getTurnTotal();
+        }
+
+        return sum;
+    }
+
     public List<RecentActivityResponse> getRecentActivity() {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        List<Ticket> tickets = ticketRepository.findByUid(uid, PageUtils.getPageable(1, 5, PageUtils.getSort("DESC", "usedAt"))).getContent();
+        List<Ticket> tickets = ticketRepository.findByUidAndTurnTotalGreaterThan(uid, 0, PageUtils.getPageable(1, 5, PageUtils.getSort("DESC", "usedAt")));
 
         return tickets.stream().map(ticket -> new RecentActivityResponse(ticket.getCategory().getName(), ticket.getTurnTotal(), TimeUtils.convertTime(ticket.getUsedAt(), "dd/MM/yyyy hh:mm:ss"))).toList();
     }

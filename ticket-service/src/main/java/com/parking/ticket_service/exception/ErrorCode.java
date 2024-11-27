@@ -36,7 +36,7 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(6032, "Không đủ số dư", HttpStatus.BAD_REQUEST),
     PROCESS_FAIL(6033, "Lỗi xử lý", HttpStatus.BAD_REQUEST),
     TICKET_NOTFOUND(6034, "Vé không tồn tại", HttpStatus.BAD_REQUEST),
-    CANNOT_UPDATE_PLATE(6035, "Cập nhật biển số thất bại", HttpStatus.BAD_REQUEST),
+    CANNOT_UPDATE_PLATE(6035, "Không được phép thay đổi biển số lần 2 khi đã sử dụng", HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_TICKET(6036, "Cập nhật thất bại", HttpStatus.BAD_REQUEST),
     INVALID_FORMAT_DATETIME(6037, "Lỗi định dạng thời gian", HttpStatus.BAD_REQUEST),
     INVALID_NEW_EXPIRE(6038, "Thời gian sử dụng còn ít nhất là 15 phút", HttpStatus.BAD_REQUEST),
