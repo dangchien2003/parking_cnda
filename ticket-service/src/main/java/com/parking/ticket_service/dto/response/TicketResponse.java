@@ -41,4 +41,10 @@ public class TicketResponse {
     long expireAt;
 
     long usedAt;
+
+    String plate;
+
+    String email;
+
+    String unit;
 }

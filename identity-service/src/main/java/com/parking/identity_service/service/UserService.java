@@ -134,11 +134,9 @@ public class UserService {
         return user;
     }
 
-    public UserResponse getUser(String id) {
-        User user = userRepository.findById(id)
+    public User getUser(String id) {
+        return userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
-
-        return userMapper.toUserResponse(user);
     }
 
     public List<User> getListUser(List<String> emails) {

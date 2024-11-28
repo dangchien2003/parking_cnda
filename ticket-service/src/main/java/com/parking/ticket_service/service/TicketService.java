@@ -63,6 +63,7 @@ public class TicketService {
     CategoryService categoryService;
     QRService qrService;
 
+
     static final long EXTENDED_UNIT_PRICE_ONE_MINUTE = 1_000;
     static final String KEY_CANCEL_QR = "CANCELED_";
 
@@ -502,6 +503,7 @@ public class TicketService {
         return ticketResponse;
     }
 
+
     @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public TicketResponse getInfoTicketADMIN(String ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -516,6 +518,9 @@ public class TicketService {
         if (ticket.getUsedAt() != 0) {
             ticketResponse.setUsedTime(TimeUtils.convertTime(ticket.getUsedAt(), "HH:mm dd/MM/yyyy"));
         }
+        ticketResponse.setPlate(ticket.getContentPlate() == null ? "" : ticket.getContentPlate());
+        ticketResponse.setUnit(ticket.getCategory().getUnit());
+        ticketResponse.setEmail(identityClient.getInfoUser(ticket.getUid()).getResult().getEmail());
         return ticketResponse;
     }
 

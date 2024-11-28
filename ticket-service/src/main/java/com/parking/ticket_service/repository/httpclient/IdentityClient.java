@@ -4,6 +4,7 @@ import com.parking.ticket_service.dto.response.ApiResponse;
 import com.parking.ticket_service.dto.response.User;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -12,4 +13,7 @@ import java.util.List;
 public interface IdentityClient {
     @GetMapping(value = "/users/internal/get-all-by-emails")
     ApiResponse<List<User>> getAllUser(@RequestParam(name = "emails") List<String> emails);
+
+    @GetMapping(value = "/users/{id}")
+    ApiResponse<User> getInfoUser(@PathVariable(name = "id") String id);
 }
