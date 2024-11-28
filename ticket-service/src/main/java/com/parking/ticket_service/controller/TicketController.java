@@ -37,6 +37,14 @@ public class TicketController {
                 .build();
     }
 
+    @GetMapping("admin/{ticket}")
+    ApiResponse<TicketResponse> infoGetInfo(@PathVariable(name = "ticket") String ticket) {
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketService.getInfoTicketADMIN(ticket))
+                .build();
+    }
+
+
     @PutMapping("/plate")
     ApiResponse<TicketResponse> updatePlate(@Valid @RequestBody TicketUpdatePlateRequest request) {
         return ApiResponse.<TicketResponse>builder()

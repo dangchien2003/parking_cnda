@@ -485,12 +485,29 @@ public class TicketService {
         return objectMapper.readValue(decompressedData, ContentQr.class);
     }
 
-    //    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public TicketResponse getInfoTicket(String ticketId) {
         Ticket ticket = getTicket(ticketId);
 
         if (ticket == null)
             throw new AppException(ErrorCode.TICKET_NOTFOUND);
+
+        TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
+        ticketResponse.setBuyTime(TimeUtils.convertTime(ticket.getBuyAt(), "HH:mm dd/MM/yyyy"));
+        ticketResponse.setExpireTime(TimeUtils.convertTime(ticket.getExpireAt(), "HH:mm dd/MM/yyyy"));
+        ticketResponse.setStartTime(TimeUtils.convertTime(ticket.getStartAt(), "HH:mm dd/MM/yyyy"));
+        if (ticket.getUsedAt() != 0) {
+            ticketResponse.setUsedTime(TimeUtils.convertTime(ticket.getUsedAt(), "HH:mm dd/MM/yyyy"));
+        }
+        return ticketResponse;
+    }
+
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
+    public TicketResponse getInfoTicketADMIN(String ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> {
+                    throw new AppException(ErrorCode.TICKET_NOTFOUND);
+                });
 
         TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
         ticketResponse.setBuyTime(TimeUtils.convertTime(ticket.getBuyAt(), "HH:mm dd/MM/yyyy"));
