@@ -501,6 +501,7 @@ public class TicketService {
         }
         return ticketResponse;
     }
+    
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public void extendTicket(String ticketId, String date) {
