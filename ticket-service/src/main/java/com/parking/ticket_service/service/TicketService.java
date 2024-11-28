@@ -414,7 +414,7 @@ public class TicketService {
 
     public List<tkdtResponse> tkdt(String date1) {
         List<Ticket> tickets = getListBetween(date1);
-        
+
         Map<String, int[]> revenueByDate = new HashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
@@ -485,7 +485,7 @@ public class TicketService {
         return objectMapper.readValue(decompressedData, ContentQr.class);
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+    //    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public TicketResponse getInfoTicket(String ticketId) {
         Ticket ticket = getTicket(ticketId);
 
