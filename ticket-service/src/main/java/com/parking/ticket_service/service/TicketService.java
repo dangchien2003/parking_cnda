@@ -334,8 +334,8 @@ public class TicketService {
             Ticket ticket = Ticket.builder()
                     .id(UUID.randomUUID().toString())
                     .uid(item.getUid())
+                    .price(day * category.getPrice())
                     .buyAt(now)
-                    .turnTotal(day * category.getPrice())
                     .expireAt(to)
                     .startAt(from)
                     .category(category)
@@ -413,21 +413,36 @@ public class TicketService {
 
 
     public List<tkdtResponse> tkdt(String date1) {
-
         List<Ticket> tickets = getListBetween(date1);
-
-        Map<String, Integer> revenueByDate = new HashMap<>();
+        
+        Map<String, int[]> revenueByDate = new HashMap<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
         for (Ticket ticket : tickets) {
             String date = dateFormat.format(new Date(ticket.getBuyAt()));
+            String vehicle = ticket.getCategory().getVehicle();
 
-            revenueByDate.put(date, revenueByDate.getOrDefault(date, 0) + ticket.getPrice());
+            int[] revenue = revenueByDate.computeIfAbsent(date, k -> new int[2]);
+
+            if ("CAR".equalsIgnoreCase(vehicle)) {
+                revenue[0] += ticket.getPrice(); // amountCar
+            } else {
+                revenue[1] += ticket.getPrice(); // amountMotorbike
+            }
         }
 
         List<tkdtResponse> result = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : revenueByDate.entrySet()) {
-            result.add(new tkdtResponse(entry.getKey(), entry.getValue()));
+        for (Map.Entry<String, int[]> entry : revenueByDate.entrySet()) {
+            String date = entry.getKey();
+            int[] revenue = entry.getValue();
+            int amountCar = revenue[0];
+            int amountMotorbike = revenue[1];
+
+            result.add(tkdtResponse.builder()
+                    .date(date)
+                    .amountCar(amountCar)
+                    .amountMotorbike(amountMotorbike)
+                    .build());
         }
 
         return result;

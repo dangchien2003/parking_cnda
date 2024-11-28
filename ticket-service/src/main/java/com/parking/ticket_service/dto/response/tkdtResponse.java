@@ -13,5 +13,9 @@ import lombok.experimental.FieldDefaults;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class tkdtResponse {
     String date;
-    int amount;
+    String carName = "Ô tô";
+    int amountCar;
+
+    String motorbikeName = "Xe máy";
+    int amountMotorbike;
 }
