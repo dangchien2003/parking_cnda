@@ -358,7 +358,7 @@ public class DepositService {
                 list = depositRepository.findAllByCreateAtIsBetweenAndCancelAtIsNotNull(startDay, endDay, pageable);
             }
         } else {
-            if (status.isEmpty()) {
+            if (status.isEmpty() || status.equalsIgnoreCase("ALL")) {
                 list = depositRepository.findAll(pageable).getContent();
             } else if (status.equalsIgnoreCase("APPROVE")) {
                 list = depositRepository.findAllByActionAtIsNotNull(pageable).getContent();
