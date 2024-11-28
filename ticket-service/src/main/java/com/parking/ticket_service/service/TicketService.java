@@ -778,8 +778,10 @@ public class TicketService {
         }).toList();
     }
 
-    public Integer countTicketPurchased() {
-        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+    public Integer countTicketPurchased(String uid) {
+        if (uid == null) {
+            uid = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
         return ticketRepository.countByUid(uid);
     }
 

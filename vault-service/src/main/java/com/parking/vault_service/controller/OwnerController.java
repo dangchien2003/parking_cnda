@@ -30,4 +30,11 @@ public class OwnerController {
                 .result(ownerService.getBalance())
                 .build();
     }
+
+    @GetMapping("internal/balance")
+    ApiResponse<BalanceResponse> getBalanceInternal(@RequestParam("uid") String uid) {
+        return ApiResponse.<BalanceResponse>builder()
+                .result(ownerService.getBalance(uid))
+                .build();
+    }
 }

@@ -7,6 +7,7 @@ import com.parking.identity_service.dto.request.StaffCreationRequest;
 import com.parking.identity_service.dto.response.ApiResponse;
 import com.parking.identity_service.dto.response.DanhSachTaiKhoanResponse;
 import com.parking.identity_service.dto.response.UserResponse;
+import com.parking.identity_service.dto.response.thong_tin_tai_khoan;
 import com.parking.identity_service.entity.User;
 import com.parking.identity_service.service.UserService;
 import jakarta.validation.Valid;
@@ -66,6 +67,14 @@ public class UserController {
     ) {
         return ApiResponse.<List<DanhSachTaiKhoanResponse>>builder()
                 .result(userService.layDsTK(name, status, page))
+                .build();
+    }
+
+
+    @GetMapping("info/thong_tin_tai_khoan")
+    ApiResponse<thong_tin_tai_khoan> thong_tin_tai_khoan(@RequestParam("id") String id) {
+        return ApiResponse.<thong_tin_tai_khoan>builder()
+                .result(userService.thong_tin_tai_khoan(id))
                 .build();
     }
 

@@ -1,10 +1,7 @@
 package com.parking.identity_service.service;
 
 import com.parking.identity_service.dto.request.*;
-import com.parking.identity_service.dto.response.DanhSachTaiKhoanResponse;
-import com.parking.identity_service.dto.response.GoogleUserProfileResponse;
-import com.parking.identity_service.dto.response.ProfileCustomer;
-import com.parking.identity_service.dto.response.UserResponse;
+import com.parking.identity_service.dto.response.*;
 import com.parking.identity_service.entity.Role;
 import com.parking.identity_service.entity.User;
 import com.parking.identity_service.enums.EBlock;
@@ -16,6 +13,7 @@ import com.parking.identity_service.mapper.UserMapper;
 import com.parking.identity_service.repository.RoleRepository;
 import com.parking.identity_service.repository.UserRepository;
 import com.parking.identity_service.repository.httpclient.ProfileClient;
+import com.parking.identity_service.repository.httpclient.TicketClient;
 import com.parking.identity_service.repository.httpclient.VaultClient;
 import com.parking.identity_service.utils.PageUtils;
 import com.parking.identity_service.utils.RandomUtils;
@@ -139,8 +137,44 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
     }
 
+
     public List<User> getListUser(List<String> emails) {
         return userRepository.findAllByEmailIn(emails);
+    }
+
+    TicketClient ticketClient;
+
+    public thong_tin_tai_khoan thong_tin_tai_khoan(String id) {
+
+        thong_tin_tai_khoan thongTinTaiKhoan = new thong_tin_tai_khoan();
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
+        thongTinTaiKhoan.setId(user.getUid());
+        thongTinTaiKhoan.setEmail(user.getEmail());
+        thongTinTaiKhoan.setStatus(user.getIsBlocked() == 1 ? "Đã khoá" : "Đang hoạt động");
+
+
+        try {
+            List<ProfileCustomer> profileCustomers = profileClient.getByListId(List.of(user.getUid())).getResult();
+            if (profileCustomers.size() == 1) {
+
+                thongTinTaiKhoan.setName(profileCustomers.getFirst().getName());
+                thongTinTaiKhoan.setPhone(profileCustomers.getFirst().getPhone());
+
+            }
+
+            BalanceResponse balanceResponse = vaultClient.getBalance(user.getUid()).getResult();
+
+            thongTinTaiKhoan.setSo_du(balanceResponse.getBalence());
+
+            thongTinTaiKhoan.setTieu_dung_trong_thang(vaultClient.useinmonth(user.getUid()).getResult());
+            thongTinTaiKhoan.setSo_ve_da_mua(vaultClient.useinmonth(user.getUid()).getResult());
+            thongTinTaiKhoan.setSo_ve_da_mua(ticketClient.countTicketPurchased(user.getUid()).getResult());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return thongTinTaiKhoan;
     }
 
     public List<DanhSachTaiKhoanResponse> layDsTK(String name, String status, int page) {

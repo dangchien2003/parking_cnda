@@ -63,6 +63,10 @@ public class OwnerService {
         String uid = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
 
+        return getBalance(uid);
+    }
+
+    public BalanceResponse getBalance(String uid) {
         Owner owner = ownerRepository.findById(uid).orElseThrow(() ->
                 new AppException(ErrorCode.OWNER_NOT_EXIST));
 
@@ -77,4 +81,6 @@ public class OwnerService {
                 .balence(owner.getBalance())
                 .build();
     }
+
+
 }

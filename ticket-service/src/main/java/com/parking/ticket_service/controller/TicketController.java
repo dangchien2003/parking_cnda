@@ -171,9 +171,9 @@ public class TicketController {
     }
 
     @GetMapping("count/purchased")
-    ApiResponse<Integer> countTicketPurchased() {
+    ApiResponse<Integer> countTicketPurchased(@RequestParam(value = "uid", required = false) String uid) {
         return ApiResponse.<Integer>builder()
-                .result(ticketService.countTicketPurchased())
+                .result(ticketService.countTicketPurchased(uid))
                 .build();
     }
 

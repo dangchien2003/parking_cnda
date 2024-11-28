@@ -182,8 +182,11 @@ public class FluctuationService {
                 .build();
     }
 
-    public Integer getUseInMonth() {
-        String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+    public Integer getUseInMonth(String uid) {
+
+        if (uid == null) {
+            uid = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
 
         long now = Instant.now().toEpochMilli();
         long start = TimeUtils.getStartOfMonth(TimeUtils.convertTime(now, "dd/MM/yyyy"));

@@ -87,9 +87,9 @@ public class FluctuationController {
     }
 
     @GetMapping("/use-in-month")
-    ApiResponse<Integer> getDebitInMonth() {
+    ApiResponse<Integer> getDebitInMonth(@RequestParam(value = "uid", required = false) String uid) {
         return ApiResponse.<Integer>builder()
-                .result(fluctuationService.getUseInMonth())
+                .result(fluctuationService.getUseInMonth(uid))
                 .build();
     }
 
