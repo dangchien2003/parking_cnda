@@ -91,7 +91,7 @@ public class CategoryService {
     public CategoryResponse update(CategoryUpdateRequest request) {
 
         Category category = categoryRepository.findById(request.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.DATA_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOTFOUND));
 
         categoryMapper.toCategory(request, category);
         category.setModifiedAt(Instant.now().toEpochMilli());
@@ -195,7 +195,7 @@ public class CategoryService {
     public void updateStatus(CategoryUpdateStatusRequest request) {
 
         Category category = categoryRepository.findById(request.getCategory())
-                .orElseThrow(() -> new AppException(ErrorCode.DATA_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOTFOUND));
 
         String categoryStatus = ENumUtils
                 .getType(ECategoryStatus.class, request.getStatus())

@@ -16,15 +16,6 @@ public class CategoryUpdateRequest {
     @NotBlank(message = "FIELD_INFORMATION_MISSING")
     String id;
 
-    @NotBlank(message = "FIELD_INFORMATION_MISSING")
-    String name;
-
     @Min(value = 0, message = "INVALID_DATA")
     int price;
-
-    @Min(value = 0, message = "INVALID_DATA")
-    int quantity;
-
-    @NotBlank(message = "FIELD_INFORMATION_MISSING")
-    String unit;
 }
