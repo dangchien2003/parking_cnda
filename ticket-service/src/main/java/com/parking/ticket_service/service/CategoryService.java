@@ -93,7 +93,7 @@ public class CategoryService {
         Category category = categoryRepository.findById(request.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOTFOUND));
 
-        categoryMapper.toCategory(request, category);
+        category.setPrice(request.getPrice());
         category.setModifiedAt(Instant.now().toEpochMilli());
         category = categoryRepository.save(category);
 
@@ -201,8 +201,8 @@ public class CategoryService {
                 .getType(ECategoryStatus.class, request.getStatus())
                 .name();
 
-        if (category.getStatus().equals(categoryStatus))
-            throw new AppException(ErrorCode.UPDATE_FAIL);
+//        if (category.getStatus().equals(categoryStatus))
+//            throw new AppException(ErrorCode.UPDATE_FAIL);
 
         category.setStatus(categoryStatus);
         category.setModifiedAt(Instant.now().toEpochMilli());

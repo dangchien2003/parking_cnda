@@ -15,4 +15,5 @@ public class BlockUserRequest {
 
     @Size(min = 1, message = "INVALID_LIST_UID")
     Set<String> listUid;
+    String status;
 }

@@ -46,7 +46,7 @@ public class UserController {
                 .build();
     }
 
-    @PatchMapping("/block")
+    @PatchMapping("/action")
     ApiResponse<List<UserResponse>> blockUser(@Valid @RequestBody BlockUserRequest request) {
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.blockAccountById(request))

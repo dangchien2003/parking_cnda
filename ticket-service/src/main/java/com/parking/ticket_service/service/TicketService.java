@@ -354,7 +354,7 @@ public class TicketService {
         long from = TimeUtils.getStartOfDay(start);
         long to = TimeUtils.getEndOfDay(end);
 
-        Pageable pageable = PageUtils.getPageable(page, 3, PageUtils.getSort("ASC", "buyAt"));
+        Pageable pageable = PageUtils.getPageable(page, 30, PageUtils.getSort("ASC", "buyAt"));
 
         if (!vehicle.isEmpty() & vehicle.equalsIgnoreCase("CAR") && vehicle.equalsIgnoreCase("MOTORBIKE")) {
             throw new AppException("Phương tiện không phù hợp");

@@ -45,13 +45,13 @@ public class UserService {
     AuthenticationService authenticationService;
     KafkaTemplate<String, Object> kafkaTemplate;
 
-    @PreAuthorize("hasAnyAuthority('EDIT_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_STAFF')")
     public List<UserResponse> blockAccountById(BlockUserRequest request) {
 
         List<User> users = userRepository.findAllById(request.getListUid());
 
         users.forEach(user ->
-                user.setIsBlocked(EBlock.BLOCKED.getValue()));
+                user.setIsBlocked(request.getStatus().equalsIgnoreCase("ACTIVE") ? 0 : 1));
 
         return userRepository.saveAll(users)
                 .stream()
