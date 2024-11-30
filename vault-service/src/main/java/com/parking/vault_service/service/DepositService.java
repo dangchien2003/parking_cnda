@@ -104,7 +104,7 @@ public class DepositService {
 
         Owner owner = ownerRepository.findById(uid)
                 .orElseThrow(() -> new AppException(ErrorCode.OWNER_NOT_EXIST));
-
+        System.out.println(owner.getId());
         int numDepositWaiting = depositRepository.countByOwnerIdAndCancelAtIsNullAndActionAtIsNull(owner.getId());
 
         if (numDepositWaiting >= 3)
@@ -142,9 +142,14 @@ public class DepositService {
 
         if (deposit.getActionAt() != null)
             throw new AppException(ErrorCode.DEPOSIT_NOT_EXIST_OR_BEEN_APPROVED);
+        int kq = vnPayService.checkPaymentSuccess(request, deposit);
+        if (kq == 2) {
+            deposit.setCancelAt(Instant.now().toEpochMilli());
+            depositRepository.save(deposit);
+            return;
+        }
 
-        if (!vnPayService.checkPaymentSuccess(request, deposit)) {
-            log.warn("chưa thanh toán: " + depositId);
+        if (kq != 1) {
             return;
         }
 
@@ -353,7 +358,7 @@ public class DepositService {
             } else if (status.equalsIgnoreCase("APPROVE")) {
                 list = depositRepository.findAllByCreateAtIsBetweenAndActionAtIsNotNull(startDay, endDay, pageable);
             } else if (status.equalsIgnoreCase("WAIT")) {
-                list = depositRepository.findAllByCreateAtIsBetweenAndActionAtIsNull(startDay, endDay, pageable);
+                list = depositRepository.findAllByCreateAtIsBetweenAndActionAtIsNullAndCancelAtIsNull(startDay, endDay, pageable);
             } else {
                 list = depositRepository.findAllByCreateAtIsBetweenAndCancelAtIsNotNull(startDay, endDay, pageable);
             }
@@ -363,7 +368,7 @@ public class DepositService {
             } else if (status.equalsIgnoreCase("APPROVE")) {
                 list = depositRepository.findAllByActionAtIsNotNull(pageable).getContent();
             } else if (status.equalsIgnoreCase("WAIT")) {
-                list = depositRepository.findAllByActionAtIsNull(pageable);
+                list = depositRepository.findAllByActionAtIsNullAndCancelAtIsNull(pageable).getContent();
             } else {
                 list = depositRepository.findAllByCancelAtIsNotNull(pageable).getContent();
             }

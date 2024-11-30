@@ -50,7 +50,7 @@ public interface DepositRepository extends JpaRepository<Deposit, String> {
 
     List<Deposit> findAllByCreateAtIsBetween(long start, long end, Pageable pageable);
 
-    List<Deposit> findAllByCreateAtIsBetweenAndActionAtIsNull(long start, long end, Pageable pageable);
+    List<Deposit> findAllByCreateAtIsBetweenAndActionAtIsNullAndCancelAtIsNull(long start, long end, Pageable pageable);
 
     List<Deposit> findAllByCreateAtIsBetweenAndActionAtIsNotNull(long start, long end, Pageable pageable);
 

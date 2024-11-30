@@ -59,7 +59,7 @@ public class VnPayService {
     }
 
 
-    public boolean checkPaymentSuccess(HttpServletRequest request, Deposit deposit) {
+    public int checkPaymentSuccess(HttpServletRequest request, Deposit deposit) {
         Map<String, String[]> params = request.getParameterMap();
 
         String vnpRequestId = UUID.randomUUID().toString();
@@ -94,11 +94,13 @@ public class VnPayService {
         if (response.getVnpAmount() / 100 == deposit.getAmount()) {
             if (response.getVnpTransactionStatus().equals("00") &&
                     response.getVnpResponseCode().equals("00")) {
-                return true;
+                return 1;
+            } else if (response.getVnpTransactionStatus().equals("02")) {
+                return 2;
             }
         }
 
-        return false;
+        return 0;
     }
 
     boolean isValidVnPayCallback(Map<String, String[]> queryParams) {
