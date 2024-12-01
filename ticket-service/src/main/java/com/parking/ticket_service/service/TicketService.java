@@ -327,6 +327,15 @@ public class TicketService {
             throw new AppException("Định dạng thời gian không hợp lệ");
         }
 
+        if (to <= from) {
+            throw new AppException("Ngày kết thúc phải sau ngày bắt đầu");
+        }
+
+        if (from < LocalDate.now().atStartOfDay().toInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())).toEpochMilli()) {
+            throw new AppException("Ngày bắt đầu không được trong quá khứ");
+        }
+
+
         int day = calculateDays(from, to);
 
         List<Ticket> tickets = new ArrayList<>();
@@ -629,6 +638,14 @@ public class TicketService {
 
         long start = TimeUtils.timeToLong("00:00:00 " + request.getStartDate(), "HH:mm:ss dd/MM/yyyy");
         long end = TimeUtils.timeToLong("23:59:59 " + request.getEndDate(), "HH:mm:ss dd/MM/yyyy");
+
+        if (end <= start) {
+            throw new AppException("Ngày kết thúc phải sau ngày hiện tại");
+        }
+
+        if (start < LocalDate.now().atStartOfDay().toInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())).toEpochMilli()) {
+            throw new AppException("Ngày bắt đầu không được trong quá khứ");
+        }
 
         long startCurrentDay = getStartOfDayInMillis();
         if (start < startCurrentDay)

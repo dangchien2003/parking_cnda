@@ -95,7 +95,7 @@ public class VnPayService {
             if (response.getVnpTransactionStatus().equals("00") &&
                     response.getVnpResponseCode().equals("00")) {
                 return 1;
-            } else if (response.getVnpTransactionStatus().equals("02")) {
+            } else if (response.getVnpTransactionStatus().equals("11")) {
                 return 2;
             }
         }
