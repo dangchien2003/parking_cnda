@@ -27,6 +27,16 @@ public class TimeUtils {
     }
 
     public static long timeToLong(String time, String format) {
+        String[] split = time.split("/");
+        if (split[0].length() == 1) {
+            split[0] = "0" + split[0];
+        }
+
+        if (split[1].length() == 1) {
+            split[1] = "0" + split[1];
+        }
+
+        time = split[0] + "/" + split[1] + "/" + split[2];
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(format);
         try {
             LocalDate date = LocalDate.parse(time, dtf);
@@ -40,12 +50,32 @@ public class TimeUtils {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public static long getStartOfMonth(String dateString) {
+        String[] split = dateString.split("/");
+        if (split[0].length() == 1) {
+            split[0] = "0" + split[0];
+        }
+
+        if (split[1].length() == 1) {
+            split[1] = "0" + split[1];
+        }
+
+        dateString = split[0] + "/" + split[1] + "/" + split[2];
         LocalDate date = LocalDate.parse(dateString, DATE_FORMATTER);
         LocalDateTime startOfDay = date.withDayOfMonth(1).atStartOfDay();
         return startOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     public static long getStartOfDay(String dateString) {
+        String[] split = dateString.split("/");
+        if (split[0].length() == 1) {
+            split[0] = "0" + split[0];
+        }
+
+        if (split[1].length() == 1) {
+            split[1] = "0" + split[1];
+        }
+
+        dateString = split[0] + "/" + split[1] + "/" + split[2];
         LocalDate date = LocalDate.parse(dateString, DATE_FORMATTER);
         LocalDateTime startOfDay = date.atStartOfDay();
         return startOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -53,6 +83,17 @@ public class TimeUtils {
 
 
     public static long getEndOfDay(String dateString) {
+        String[] split = dateString.split("/");
+        if (split[0].length() == 1) {
+            split[0] = "0" + split[0];
+        }
+
+        if (split[1].length() == 1) {
+            split[1] = "0" + split[1];
+        }
+
+        dateString = split[0] + "/" + split[1] + "/" + split[2];
+
         LocalDate date = LocalDate.parse(dateString, DATE_FORMATTER);
         LocalDateTime endOfDay = date.atTime(23, 59, 59, 999000000);
         return endOfDay.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();

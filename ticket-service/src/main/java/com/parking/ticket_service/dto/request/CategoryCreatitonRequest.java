@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CategoryCreatitonRequest {
+    @NotBlank(message = "FIELD_INFORMATION_MISSING")
     String id;
 
     @NotBlank(message = "FIELD_INFORMATION_MISSING")

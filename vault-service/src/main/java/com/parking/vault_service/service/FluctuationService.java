@@ -102,7 +102,6 @@ public class FluctuationService {
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
     public List<FluctuationResponse> getAllByCustomer(String type, String date, int page, String sort, String field) {
-
         long start = 0;
         long end = 0;
         if (date != null) {
