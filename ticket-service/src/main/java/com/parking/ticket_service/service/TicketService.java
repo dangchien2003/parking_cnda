@@ -89,90 +89,95 @@ public class TicketService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
     }
 
-    //    public void checkoutFirstStep(String stationId, FirstCheckoutRequest request) throws JsonProcessingException {
-//        ContentQr contentQr = getContentQr(request.getQr());
-//        validateQrId(contentQr.getId());
-//
-//        Station station = stationCacheService.getStation(stationId);
-//        validateStationStatus(station);
-//
-//        Ticket ticket = getTicket(contentQr.getTicket());
-//        validateTicketValidity(ticket);
-//
-//        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-//
-//        validateTicketInUse(ticket, plate);
-//        validateStationManagingTicket(plate, station);
-//
-//        ticketCacheService.addTicketChecking(ticket.getId());
-//    }
-//
-//    void validateQrId(String qrid) {
-//        if (!Objects.isNull(redisRepository.getValue(KEY_CANCEL_QR + qrid)))
-//            throw new AppException(ErrorCode.TICKET_NOTFOUND);
-//    }
-//
-//    void validateTicketInUse(Ticket ticket, Plate plate) {
-//        if (ticket.getTurnTotal() <= 0 ||
-//                Objects.isNull(plate) ||
-//                plate.getCheckoutAt() > 0)
-//            throw new AppException(ErrorCode.UNUSED_TICKET);
-//    }
-//
-//    void validateStationManagingTicket(Plate plate, Station station) {
-//        if (!plate.getStation().getStationId().equals(station.getStationId()))
-//            throw new AppException(ErrorCode.DIFFERENT_STATION);
-//    }
-//
-//    public void checkoutSecondStep(String stationId, SecondCheckoutRequest request) throws JsonProcessingException {
-//        ContentQr contentQr = getContentQr(request.getQr());
-//        validateTicketChecking(contentQr);
-//
-//        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
-//
-//        Station station = getStationInSecondStep(stationId);
-//
-//        Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-//
-//        validateStationManagingTicket(plate, station);
-//        validatePlate(plate, request.getImage());
-//
-//        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal(), request.getImage(), "checkout");
-//
-//        plate.setCheckoutAt(Instant.now().toEpochMilli());
-//        plate.setImageOut(path);
-//        plateRepository.save(plate);
-//        plateCacheService.deletePlate(ticket.getId(), ticket.getTurnTotal());
-//    }
-//
-//    void validatePlate(Plate plate, String image) {
-//
-//        if (Objects.isNull(plate) ||
-//                plate.getCheckoutAt() > 0)
-//            throw new AppException(ErrorCode.CHECKIN_NOT_YET);
-//
-//        String scanPlate = fakeScanPlate(image);
-//
-//        if (!plate.getContentPlate().equals(scanPlate))
-//            throw new AppException(ErrorCode.INCORRECT_PLATE);
-//    }
-//
-//    void validateTicketChecking(ContentQr contentQr) {
-//        if (!ticketCacheService.isTicketChecking(contentQr.getTicket()))
-//            throw new AppException(ErrorCode.UNAUTHORIZED);
-//    }
-//
-//    Station getStationInSecondStep(String stationId) {
-//        try {
-//            return stationCacheService.getStation(stationId);
-//        } catch (AppException e) {
-//            throw new AppException(ErrorCode.STATION_NOT_EXIST);
-//        }
-//    }
-//
-//
+    public void checkoutFirstStep(FirstCheckoutRequest request) {
+
+        String ticketId = getContentQr(request.getQr());
+
+        if (!qrService.getNew(ticketId).getContain().equals(request.getQr())) {
+            throw new AppException("Mã không còn hiệu lực");
+        }
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException("Không tìm thấy vé"));
+
+        long now = Instant.now().toEpochMilli();
+
+        if (ticket.getStartAt() > now) {
+            throw new AppException("Vé chưa đến ngày sử dụng");
+        }
+
+        if (ticket.getExpireAt() < now) {
+            throw new AppException("Vé đã hết hạn");
+        }
+
+        List<Plate> plates = plateRepository.findAllById_TicketId(ticketId);
+        Plate plate = null;
+        if (!plates.isEmpty()) {
+            plates.sort(Comparator.comparingInt((Plate item) -> item.getId().getTurn()).reversed());
+            plate = plates.getFirst();
+            if (plate.getCheckoutAt() != 0) {
+                throw new AppException("Cần checkin");
+            }
+        } else {
+            throw new AppException("Cần checkin");
+        }
+
+        if (plate.getId().getTurn() != ticket.getTurnTotal()) {
+            log.error("Khác lượt sử dụng");
+        }
+
+        ticketCacheService.addTicketChecking(ticket.getId());
+    }
+
+
+    public void checkoutSecondStep(SecondCheckoutRequest request) {
+        String ticketId = getContentQr(request.getQr());
+
+        if (!ticketCacheService.isTicketChecking(ticketId)) {
+            throw new AppException("Không thể checkout");
+        }
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException("Không tìm thấy vé"));
+
+        String scanPlate = fakeScanPlate(request.getImage());
+
+        validatePlate(ticket, scanPlate);
+
+        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal() + 1, request.getImage(), "checkin");
+
+
+        List<Plate> plates = plateRepository.findAllById_TicketId(ticketId);
+        Plate plate = null;
+        if (!plates.isEmpty()) {
+            plates.sort(Comparator.comparingInt((Plate item) -> item.getId().getTurn()).reversed());
+            plate = plates.getFirst();
+            if (plate.getCheckoutAt() != 0) {
+                throw new AppException("Cần checkin");
+            }
+        } else {
+            throw new AppException("Cần checkin");
+        }
+
+        long now = Instant.now().toEpochMilli();
+
+        plate.setCheckoutAt(now);
+        plate.setImageOut(path);
+        plate.setUsedAt(now);
+
+        ticket.setUsedAt(now);
+
+        plateRepository.save(plate);
+        ticketRepository.save(ticket);
+        ticketCacheService.deleteTicketChecking(ticket.getId());
+    }
+
     public void checkinFirstStep(FirstCheckinRequest request) {
         String ticketId = getContentQr(request.getQr());
+
+        if (!qrService.getNew(ticketId).getContain().equals(request.getQr())) {
+            throw new AppException("Mã không còn hiệu lực");
+        }
 
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new AppException("Không tìm thấy vé"));
@@ -205,6 +210,7 @@ public class TicketService {
     }
 
     public void checkinSecondStep(SecondCheckinRequest request) {
+
         String ticketId = getContentQr(request.getQr());
 
         if (!ticketCacheService.isTicketChecking(ticketId)) {
@@ -223,7 +229,7 @@ public class TicketService {
         PlateId plateId = new PlateId(ticket.getId(), ticket.getTurnTotal() + 1);
         Plate newPlate = Plate.builder()
                 .id(plateId)
-                .urlPrefixCode(UrlPrefixCodeImage.V1.getCode())
+                .urlPrefixCode(UrlPrefixCodeImage.V1.getValue())
                 .imageIn(path)
                 .checkinAt(Instant.now().toEpochMilli())
                 .contentPlate(scanPlate)

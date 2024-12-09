@@ -1,5 +1,6 @@
 package com.parking.ticket_service.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.parking.ticket_service.dto.request.*;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Ticket;
@@ -141,22 +142,20 @@ public class TicketController {
         return ApiResponse.<Void>builder()
                 .build();
     }
-//
-//    @PostMapping("/checkout/first")
-//    ApiResponse<Void> firstCheckout(@RequestHeader(name = "station") String station,
-//                                    @Valid @RequestBody FirstCheckoutRequest request) throws JsonProcessingException {
-//        ticketService.checkoutFirstStep(station, request);
-//        return ApiResponse.<Void>builder()
-//                .build();
-//    }
-//
-//    @PostMapping("/checkout/second")
-//    ApiResponse<Void> secondCheckout(@RequestHeader(name = "station") String station,
-//                                     @Valid @RequestBody SecondCheckoutRequest request) throws JsonProcessingException {
-//        ticketService.checkoutSecondStep(station, request);
-//        return ApiResponse.<Void>builder()
-//                .build();
-//    }
+
+    @PostMapping("/checkout/first")
+    ApiResponse<Void> firstCheckout(@Valid @RequestBody FirstCheckoutRequest request) {
+        ticketService.checkoutFirstStep(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
+
+    @PostMapping("/checkout/second")
+    ApiResponse<Void> secondCheckout(@Valid @RequestBody SecondCheckoutRequest request) throws JsonProcessingException {
+        ticketService.checkoutSecondStep(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
 
     @GetMapping("/all")
     ApiResponse<List<TicketResponse>> getAll(@RequestParam("page") int page,
