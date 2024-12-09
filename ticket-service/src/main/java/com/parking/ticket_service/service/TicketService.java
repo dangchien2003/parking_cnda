@@ -1,15 +1,16 @@
 package com.parking.ticket_service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.parking.ticket_service.dto.request.*;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Category;
 import com.parking.ticket_service.entity.Plate;
+import com.parking.ticket_service.entity.PlateId;
 import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.enums.ECategoryUnit;
 import com.parking.ticket_service.enums.ECloudinary;
 import com.parking.ticket_service.enums.EReason;
+import com.parking.ticket_service.enums.UrlPrefixCodeImage;
 import com.parking.ticket_service.exception.AppException;
 import com.parking.ticket_service.exception.ErrorCode;
 import com.parking.ticket_service.mapper.TicketMapper;
@@ -67,18 +68,18 @@ public class TicketService {
     static final long EXTENDED_UNIT_PRICE_ONE_MINUTE = 1_000;
     static final String KEY_CANCEL_QR = "CANCELED_";
 
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public void cancelQr(CancelQrRequest request) throws JsonProcessingException {
-        ContentQr contentQr = getContentQr(request.getQr());
-        validateOwner(contentQr);
-
-        long seconds = (contentQr.getExpireAt() - Instant.now().toEpochMilli()) / 1000;
-
-        if (seconds <= 0)
-            return;
-
-        redisRepository.saveValue(KEY_CANCEL_QR + contentQr.getId(), true, Duration.of(seconds, ChronoUnit.SECONDS));
-    }
+//    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+//    public void cancelQr(CancelQrRequest request) throws JsonProcessingException {
+//        ContentQr contentQr = getContentQr(request.getQr());
+//        validateOwner(contentQr);
+//
+//        long seconds = (contentQr.getExpireAt() - Instant.now().toEpochMilli()) / 1000;
+//
+//        if (seconds <= 0)
+//            return;
+//
+//        redisRepository.saveValue(KEY_CANCEL_QR + contentQr.getId(), true, Duration.of(seconds, ChronoUnit.SECONDS));
+//    }
 
     void validateOwner(ContentQr contentQr) {
         String uid = SecurityContextHolder.getContext()
@@ -88,7 +89,7 @@ public class TicketService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
     }
 
-//    public void checkoutFirstStep(String stationId, FirstCheckoutRequest request) throws JsonProcessingException {
+    //    public void checkoutFirstStep(String stationId, FirstCheckoutRequest request) throws JsonProcessingException {
 //        ContentQr contentQr = getContentQr(request.getQr());
 //        validateQrId(contentQr.getId());
 //
@@ -170,90 +171,72 @@ public class TicketService {
 //    }
 //
 //
-//    public void checkinFirstStep(String stationId, FirstCheckinRequest request) throws JsonProcessingException {
-//        ContentQr contentQr = getContentQr(request.getQr());
-//        validateQrId(contentQr.getId());
-//
-//        Station station = stationCacheService.getStation(stationId);
-//        validateStationStatus(station);
-//
-//        Ticket ticket = getTicket(contentQr.getTicket());
-//
-//        validateTicketValidity(ticket);
-//
-//        validateTicketBeforeCheckin(ticket);
-//
-////        validateStationAndCategory(ticket, station);
-//
-//        ticketCacheService.addTicketChecking(ticket.getId());
-//    }
-//
-//    void validateTicketValidity(Ticket ticket) {
-//        if (ticket.getCancleAt() > 0 || ticket.getExpireAt() < Instant.now().toEpochMilli()) {
-//            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
-//        }
-//    }
-//
-//    void validateStationStatus(Station station) {
-//        if (!station.getStatus().equals(EStationStatus.ACTIVE.name())) {
-//            throw new AppException(ErrorCode.STATION_NOT_SUPPORT);
-//        }
-//    }
-//
-//    void validateTicketBeforeCheckin(Ticket ticket) {
-//        if (ticket.getTurnTotal() > 0) {
-//            Plate plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-//            if (!Objects.isNull(plate) && plate.getCheckoutAt() == 0 && plate.getCheckinAt() > 0) {
-//                throw new AppException(ErrorCode.TICKET_IN_USE);
-//            }
-//        }
-//    }
-//
-////    void validateStationAndCategory(Ticket ticket, Station station) {
-////        if (ticket.getCategory().getUnit().equals(ECategoryUnit.TIMES.name()) &&
-////                ticket.getTurnTotal() + 1 > ticket.getCategory().getQuantity()) {
-////            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
-////        }
-////
-////        Category category = categoryRepository.findById(ticket.getCategory().getCategory().getId())
-////                .orElseThrow(() -> new AppException(ErrorCode.ERROR_TICKET));
-////
-////        if (category.getStations().stream()
-////                .noneMatch(element -> element.getStationId().equals(station.getStationId())))
-////            throw new AppException(ErrorCode.STATION_NOT_SUPPORT_TICKET);
-////    }
-//
-//    public void checkinSecondStep(String stationId, SecondCheckinRequest request) throws JsonProcessingException {
-//        ContentQr contentQr = getContentQr(request.getQr());
-//        validateTicketChecking(contentQr);
-//
-//        Ticket ticket = ticketCacheService.getTicket(contentQr.getTicket(), contentQr.getUid());
-//        Station station = getStationInSecondStep(stationId);
-//
-//        String scanPlate = fakeScanPlate(request.getImage());
-//
-//        validatePlate(ticket, scanPlate);
-//
-//        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal() + 1, request.getImage(), "checkin");
-//
-//        PlateId plateId = new PlateId(ticket.getId(), ticket.getTurnTotal() + 1);
-//        Plate newPlate = Plate.builder()
-//                .id(plateId)
-//                .urlPrefixCode(UrlPrefixCodeImage.V1.getCode())
-//                .imageIn(path)
-//                .checkinAt(Instant.now().toEpochMilli())
-//                .contentPlate(scanPlate)
-//                .station(station)
-//                .build();
-//
-//        ticket.setTurnTotal(ticket.getTurnTotal() + 1);
-//        if (ticket.getCategoryId().getUnit().equals(ECategoryUnit.TIMES.name()))
-//            ticket.setExpireAt(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli());
-//
-//        plateRepository.save(newPlate);
-//        ticketRepository.save(ticket);
-//        ticketCacheService.deleteTicket(ticket.getId());
-//    }
+    public void checkinFirstStep(FirstCheckinRequest request) {
+        String ticketId = getContentQr(request.getQr());
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException("Không tìm thấy vé"));
+
+        long now = Instant.now().toEpochMilli();
+
+        if (ticket.getStartAt() > now) {
+            throw new AppException("Vé chưa đến ngày sử dụng");
+        }
+
+        if (ticket.getExpireAt() < now) {
+            throw new AppException("Vé đã hết hạn");
+        }
+
+        List<Plate> plates = plateRepository.findAllById_TicketId(ticketId);
+        Plate plate = null;
+        if (!plates.isEmpty()) {
+            plates.sort(Comparator.comparingInt((Plate item) -> item.getId().getTurn()).reversed());
+            plate = plates.getFirst();
+            if (plate.getCheckoutAt() == 0) {
+                throw new AppException("Vé cần phải checkout");
+            }
+        }
+
+        if (plate != null && plate.getId().getTurn() != ticket.getTurnTotal()) {
+            log.error("Khác lượt sử dụng");
+        }
+
+        ticketCacheService.addTicketChecking(ticket.getId());
+    }
+
+    public void checkinSecondStep(SecondCheckinRequest request) {
+        String ticketId = getContentQr(request.getQr());
+
+        if (!ticketCacheService.isTicketChecking(ticketId)) {
+            throw new AppException("Không thể checkin");
+        }
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException("Không tìm thấy vé"));
+
+        String scanPlate = fakeScanPlate(request.getImage());
+
+        validatePlate(ticket, scanPlate);
+
+        String path = uploadPlate(ticket.getId(), ticket.getTurnTotal() + 1, request.getImage(), "checkin");
+
+        PlateId plateId = new PlateId(ticket.getId(), ticket.getTurnTotal() + 1);
+        Plate newPlate = Plate.builder()
+                .id(plateId)
+                .urlPrefixCode(UrlPrefixCodeImage.V1.getCode())
+                .imageIn(path)
+                .checkinAt(Instant.now().toEpochMilli())
+                .contentPlate(scanPlate)
+                .usedAt(Instant.now().toEpochMilli())
+                .build();
+
+        ticket.setTurnTotal(ticket.getTurnTotal() + 1);
+        ticket.setUsedAt(Instant.now().toEpochMilli());
+
+        plateRepository.save(newPlate);
+        ticketRepository.save(ticket);
+        ticketCacheService.deleteTicketChecking(ticket.getId());
+    }
 
     String fakeScanPlate(String image) {
         return "123";
@@ -458,41 +441,38 @@ public class TicketService {
         return result;
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public String renderQr(String ticketId) throws Exception {
+//    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+//    public String renderQr(String ticketId) throws Exception {
+//
+//        Ticket ticket = getTicket(ticketId);
+//
+//        if (
+//                ticket.getExpireAt() < Instant.now().toEpochMilli())
+//            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
+//
+//        Plate plate = null;
+//        if (ticket.getCategory().getUnit().equals(ECategoryUnit.DAY.name()) &&
+//                ticket.getTurnTotal() >= ticket.getCategory().getQuantity()) {
+//            plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
+//
+//            if (Objects.isNull(plate) || plate.getCheckoutAt() > 0)
+//                throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
+//        }
+//
+//        ContentQr contentQr = ticketMapper.toContentQr(ticket);
+//        contentQr.setId(UUID.randomUUID().toString());
+//
+//        byte[] compressedData = objectMapper.writeValueAsString(contentQr).getBytes();
+//        return AESUtils.encrypt(compressedData);
+//    }
 
-        Ticket ticket = getTicket(ticketId);
-
-        if (
-                ticket.getExpireAt() < Instant.now().toEpochMilli())
-            throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
-
-        Plate plate = null;
-        if (ticket.getCategory().getUnit().equals(ECategoryUnit.DAY.name()) &&
-                ticket.getTurnTotal() >= ticket.getCategory().getQuantity()) {
-            plate = plateCacheService.getPlate(ticket.getId(), ticket.getTurnTotal());
-
-            if (Objects.isNull(plate) || plate.getCheckoutAt() > 0)
-                throw new AppException(ErrorCode.TICKET_NO_LONGER_VALID);
-        }
-
-        ContentQr contentQr = ticketMapper.toContentQr(ticket);
-        contentQr.setId(UUID.randomUUID().toString());
-
-        byte[] compressedData = objectMapper.writeValueAsString(contentQr).getBytes();
-        return AESUtils.encrypt(compressedData);
-    }
-
-    ContentQr getContentQr(String encrypt) throws JsonProcessingException {
-        String decompressedData;
+    String getContentQr(String encrypt) {
         try {
             byte[] decryptedCompressedData = AESUtils.decrypt(encrypt);
-            decompressedData = new String(decryptedCompressedData, StandardCharsets.UTF_8);
+            return new String(decryptedCompressedData, StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new AppException(ErrorCode.TICKET_NOTFOUND);
         }
-
-        return objectMapper.readValue(decompressedData, ContentQr.class);
     }
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")

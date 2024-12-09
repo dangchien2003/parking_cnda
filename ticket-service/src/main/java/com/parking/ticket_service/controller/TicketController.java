@@ -1,8 +1,6 @@
 package com.parking.ticket_service.controller;
 
-import com.parking.ticket_service.dto.request.AdminBuyTicket;
-import com.parking.ticket_service.dto.request.BuyTicketRequest;
-import com.parking.ticket_service.dto.request.TicketUpdatePlateRequest;
+import com.parking.ticket_service.dto.request.*;
 import com.parking.ticket_service.dto.response.*;
 import com.parking.ticket_service.entity.Ticket;
 import com.parking.ticket_service.service.TicketService;
@@ -67,12 +65,12 @@ public class TicketController {
                 .build();
     }
 
-    @GetMapping("/qr/{ticketId}")
-    ApiResponse<String> renderQr(@PathVariable(name = "ticketId") String ticket) throws Exception {
-        return ApiResponse.<String>builder()
-                .result(ticketService.renderQr(ticket))
-                .build();
-    }
+//    @GetMapping("/qr/{ticketId}")
+//    ApiResponse<String> renderQr(@PathVariable(name = "ticketId") String ticket) throws Exception {
+//        return ApiResponse.<String>builder()
+//                .result(ticketService.renderQr(ticket))
+//                .build();
+//    }
 
     //    @GetMapping("mn/da-ban")
 //    ApiResponse<List<Object>> layVeDaBan(@RequestParam(name = "page", defaultValue = "1", required = false) int page,
@@ -130,21 +128,19 @@ public class TicketController {
     }
 
 
-//    @PostMapping("/checkin/first")
-//    ApiResponse<Void> firstCheckin(@RequestHeader(name = "station") String station,
-//                                   @Valid @RequestBody FirstCheckinRequest request) throws JsonProcessingException {
-//        ticketService.checkinFirstStep(station, request);
-//        return ApiResponse.<Void>builder()
-//                .build();
-//    }
-//
-//    @PostMapping("/checkin/second")
-//    ApiResponse<Void> secondCheckin(@RequestHeader(name = "station") String station,
-//                                    @Valid @RequestBody SecondCheckinRequest request) throws JsonProcessingException {
-//        ticketService.checkinSecondStep(station, request);
-//        return ApiResponse.<Void>builder()
-//                .build();
-//    }
+    @PostMapping("/checkin/first")
+    ApiResponse<Void> firstCheckin(@Valid @RequestBody FirstCheckinRequest request) {
+        ticketService.checkinFirstStep(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
+
+    @PostMapping("/checkin/second")
+    ApiResponse<Void> secondCheckin(@Valid @RequestBody SecondCheckinRequest request) {
+        ticketService.checkinSecondStep(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
 //
 //    @PostMapping("/checkout/first")
 //    ApiResponse<Void> firstCheckout(@RequestHeader(name = "station") String station,

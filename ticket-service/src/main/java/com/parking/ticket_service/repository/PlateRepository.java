@@ -13,4 +13,7 @@ public interface PlateRepository extends JpaRepository<Plate, PlateId> {
     int countByTicketIds(@Param("ticketIds") List<String> ticketIds, @Param("start") long start, @Param("end") long end);
 
     List<Plate> findAllById_TicketId(String ticket);
+
+    @Query(value = "SELECT plate from plate p where p.id.ticketId = :ticket ORDER BY p.id.turn DESC limit 1")
+    Plate findNewByTicketId(@Param("ticket") String ticket);
 }

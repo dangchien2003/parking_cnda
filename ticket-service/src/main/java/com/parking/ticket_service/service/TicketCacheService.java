@@ -26,7 +26,7 @@ public class TicketCacheService {
     }
 
     @CacheEvict(value = "ticket", key = "#ticketId")
-    public void deleteTicket(String ticketId) {
+    public void deleteTicketChecking(String ticketId) {
     }
 
     @Cacheable(value = "checking", key = "#ticketId+'-checking'", unless = "#result == false")

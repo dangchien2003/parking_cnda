@@ -43,7 +43,7 @@ public enum ErrorCode {
     EXTEND_FAIL(6039, "Vé không đủ điều kiện gia hạn", HttpStatus.BAD_REQUEST),
     TICKET_NO_LONGER_VALID(6040, "Vé không còn hiệu lực", HttpStatus.BAD_REQUEST),
     STATION_NOT_SUPPORT(6041, "Trạm không còn hoạt động", HttpStatus.BAD_REQUEST),
-    INVALID_PLATE(6042, "Số biển số không đúng", HttpStatus.BAD_REQUEST),
+    INVALID_PLATE(6042, "Biển số không đúng", HttpStatus.BAD_REQUEST),
     TICKET_IN_USE(6043, "Vé đang sử dụng", HttpStatus.BAD_REQUEST),
     ERROR_TICKET(6044, "Vé lỗi", HttpStatus.BAD_REQUEST),
     STATION_NOT_SUPPORT_TICKET(6045, "Trạm không hỗ trợ vé này", HttpStatus.BAD_REQUEST),
