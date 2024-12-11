@@ -38,7 +38,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     String[] publicEndpoints = {
             "/identity/auth",
             "/identity/auth/.*",
-            "/identity/users/customer/registration"
+            "/identity/users/customer/registration",
+            "/ticket/checkin/.*",
+            "/ticket/checkout/.*"
     };
 
     @Override

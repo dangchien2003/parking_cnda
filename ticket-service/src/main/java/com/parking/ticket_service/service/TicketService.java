@@ -174,7 +174,6 @@ public class TicketService {
 
     public void checkinFirstStep(FirstCheckinRequest request) {
         String ticketId = getContentQr(request.getQr());
-
         if (!qrService.getNew(ticketId).getContain().equals(request.getQr())) {
             throw new AppException("Mã không còn hiệu lực");
         }

@@ -59,12 +59,12 @@ public class QRService {
     void validTicket(Ticket ticket) {
         String uid = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        if (!ticket.getUid().equals(uid)) {
+        if (!uid.equals("anonymousUser") && !ticket.getUid().equals(uid)) {
             throw new AppException(ErrorCode.TICKET_NOTFOUND);
         }
 
         long startDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
-       
+
 
         if (ticket.getExpireAt() < startDay) {
             throw new AppException("Vé đã hết hạn");
